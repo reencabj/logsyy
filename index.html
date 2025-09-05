@@ -7,18 +7,18 @@
   <meta name="description" content="Sistema de logs Yakuza. Acceso exclusivo con Discord.">
   <style>
     :root{
-      /* Young Yakuza */
-      --yy-green:#27f198;   /* principal */
-      --yy-lilac:#9e8ced;   /* acento */
-      /* Base UI */
-      --bg:#0a0a0e;         /* fondo */
+      /* Young Yakuza: lila + grises */
+      --yy-lilac:#9e8ced;      /* primario */
+      --yy-lilac-dark:#7e6de0; /* tono oscuro */
+      --yy-lilac-light:#b7aaf2;/* tono claro */
+
+      --bg:#0a0a0e;
       --bg-2:#0c0c12;
-      --panel:#12121a;      /* tarjetas */
-      --bd:#222334;         /* bordes */
-      --text:#e7e7e9;       /* texto */
-      --muted:#a3a7b3;      /* texto secundario */
-      --ok:#27f198;         /* ok */
-      --alert:#ef4444;      /* alerta */
+      --panel:#12121a;
+      --bd:#222334;
+      --text:#e7e7e9;
+      --muted:#a3a7b3;
+      --alert:#ef4444;
       --radius:14px;
     }
 
@@ -30,7 +30,7 @@
       color:var(--text);
       background:linear-gradient(180deg,var(--bg) 0%, var(--bg-2) 60%, var(--bg) 100%);
     }
-    a{color:var(--yy-green);text-decoration:none}
+    a{color:var(--yy-lilac);text-decoration:none}
     .container{max-width:1000px;margin:0 auto;padding:24px}
     .card{
       background:var(--panel);
@@ -50,7 +50,7 @@
       background:#121221;color:var(--text)
     }
     .btn.primary{
-      background:linear-gradient(90deg, var(--yy-lilac) 0%, var(--yy-green) 100%);
+      background:linear-gradient(90deg, var(--yy-lilac-dark) 0%, var(--yy-lilac) 60%, var(--yy-lilac-light) 100%);
       border:none;
     }
 
@@ -58,7 +58,7 @@
       width:100%;background:#0f0f15;border:1px solid var(--bd);color:var(--text);
       border-radius:10px;padding:12px 14px;outline:none
     }
-    input:focus,select:focus,textarea:focus{border-color:#6ea8ff}
+    input:focus,select:focus,textarea:focus{border-color:var(--yy-lilac)}
     .row{display:grid;gap:14px}
     @media (min-width:720px){.grid-2{grid-template-columns:1fr 1fr}}
 
@@ -73,7 +73,7 @@
 
     .toast{position:fixed;bottom:18px;right:18px;background:#121226;border:1px solid var(--bd);padding:12px 14px;border-radius:12px}
 
-    /* Grid para tarjetas KPI del resumen */
+    /* Grid KPI resumen */
     .yy-grid-cards{
       display:grid;gap:12px;
       grid-template-columns: repeat( auto-fit, minmax(190px, 1fr) );
@@ -87,9 +87,9 @@
     .kpi .kpi-label{font-size:13px;color:var(--muted)}
     .kpi .kpi-value{font-size:28px;font-weight:700;margin-top:4px}
     .kpi .kpi-sub{font-size:12px;color:var(--muted);margin-top:2px}
-    .kpi.req .kpi-value{color:var(--yy-green)}
+    .kpi.req .kpi-value{color:var(--yy-lilac)}
 
-    /* ---- Chips de participantes ---- */
+    /* Chips participantes */
     .chips{
       display:flex;gap:8px;flex-wrap:wrap;
       min-height:44px;padding:6px;border:1px solid var(--bd);
@@ -109,7 +109,7 @@
     }
     .suggestItem{padding:8px 12px;cursor:pointer}
     .suggestItem:hover{background:#151525}
-    .suggestItem.create{color:var(--yy-green)}
+    .suggestItem.create{color:var(--yy-lilac)}
   </style>
 </head>
 <body>
@@ -136,7 +136,7 @@
 
     <!-- App -->
     <div id="app" class="hidden">
-      <!-- ====== RESUMEN SEMANAL ====== -->
+      <!-- RESUMEN SEMANAL -->
       <div class="card" style="margin-top:16px">
         <div class="flex">
           <h2>Resumen semanal</h2>
@@ -154,7 +154,7 @@
         </div>
       </div>
 
-      <!-- ====== NUEVO LOG ====== -->
+      <!-- NUEVO LOG -->
       <div class="card" style="margin-top:16px">
         <h2>Nuevo log</h2>
         <div class="row">
@@ -193,7 +193,7 @@
         </div>
       </div>
 
-      <!-- ====== LISTADO ====== -->
+      <!-- LISTADO -->
       <div class="card" style="margin-top:16px">
         <div class="flex">
           <h2>Registros recientes</h2>
@@ -235,22 +235,17 @@
   <div id="toast" class="toast hidden"></div>
 
   <script type="module">
-    // ========= CONFIG & CLIENT =========
+    // ===== CONFIG & CLIENT =====
     const SUPABASE_URL  = "https://dxohxpjeymoenqnvmqko.supabase.co"; // <-- reemplazar
     const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4b2h4cGpleW1vZW5xbnZtcWtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcwNDQ1MjcsImV4cCI6MjA3MjYyMDUyN30.lIDbq0OzEghpqtXCaRIbU33bcMq_l77zFAWTbrB0myE";
-    const REDIRECT_TO   = location.origin + location.pathname;   // usar misma URL en Discord & Supabase
+    const REDIRECT_TO   = location.origin + location.pathname;
 
     import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON, {
-      auth:{
-        persistSession:true,
-        autoRefreshToken:true,
-        detectSessionInUrl:true,
-        storageKey:'yy-logs-auth'
-      }
+      auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, storageKey:'yy-logs-auth' }
     });
 
-    // ========= CATEGORÍAS =========
+    // ===== CATEGORÍAS =====
     const REQUIRES_AMOUNT = new Set(['venta_meta','crafteo_armas','tiradas_meta']);
     const CAT_LABEL = {
       almacenes:'Almacenes',
@@ -263,57 +258,44 @@
       tiradas_meta:'Tiradas Metanfetamina'
     };
 
-    // ========= REFS UI =========
-    const authCard   = document.getElementById('authCard');
-    const app        = document.getElementById('app');
-    const whoami     = document.getElementById('whoami');
-    const avatarImg  = document.getElementById('avatar');
-    const btnSignOut = document.getElementById('btnSignOut');
-    const btnDiscord = document.getElementById('btnDiscord');
+    // ===== REFS UI =====
+    const authCard=document.getElementById('authCard'); const app=document.getElementById('app');
+    const whoami=document.getElementById('whoami'); const avatarImg=document.getElementById('avatar');
+    const btnSignOut=document.getElementById('btnSignOut'); const btnDiscord=document.getElementById('btnDiscord');
 
-    const participantsInput = document.getElementById('participantsInput');
-    const chipsBox   = document.getElementById('chipsBox');
-    const suggestBox = document.getElementById('suggestBox');
+    const participantsInput=document.getElementById('participantsInput');
+    const chipsBox=document.getElementById('chipsBox'); const suggestBox=document.getElementById('suggestBox');
 
-    const category     = document.getElementById('category');
-    const amountWrap   = document.getElementById('amountWrap');
-    const amount       = document.getElementById('amount');
-    const amountHint   = document.getElementById('amountHint');
-    const notes        = document.getElementById('notes');
-    const btnSubmit    = document.getElementById('btnSubmit');
+    const category=document.getElementById('category'); const amountWrap=document.getElementById('amountWrap');
+    const amount=document.getElementById('amount'); const amountHint=document.getElementById('amountHint');
+    const notes=document.getElementById('notes'); const btnSubmit=document.getElementById('btnSubmit');
 
-    const filterCat    = document.getElementById('filterCat');
-    const btnReload    = document.getElementById('btnReload');
-    const btnCSV       = document.getElementById('btnCSV');
-    const logsTable    = document.querySelector('#logsTable tbody');
+    const filterCat=document.getElementById('filterCat'); const btnReload=document.getElementById('btnReload');
+    const btnCSV=document.getElementById('btnCSV'); const logsTable=document.querySelector('#logsTable tbody');
 
     // Resumen semanal
-    const weekInput = document.getElementById('weekInput');
-    const btnPrevWeek = document.getElementById('btnPrevWeek');
-    const btnNextWeek = document.getElementById('btnNextWeek');
-    const btnThisWeek = document.getElementById('btnThisWeek');
-    const weeklyGrid = document.getElementById('weeklyGrid');
-    const btnExportWeeklyCSV = document.getElementById('btnExportWeeklyCSV');
+    const weekInput=document.getElementById('weekInput'); const btnPrevWeek=document.getElementById('btnPrevWeek');
+    const btnNextWeek=document.getElementById('btnNextWeek'); const btnThisWeek=document.getElementById('btnThisWeek');
+    const weeklyGrid=document.getElementById('weeklyGrid'); const btnExportWeeklyCSV=document.getElementById('btnExportWeeklyCSV');
 
-    const toastEl = document.getElementById('toast');
+    const toastEl=document.getElementById('toast');
     function showToast(msg){ toastEl.textContent=msg; toastEl.classList.remove('hidden'); setTimeout(()=>toastEl.classList.add('hidden'),2200); }
 
-    // ========= AUTH (Discord only) =========
+    // ===== AUTH (Discord) =====
     btnDiscord.onclick = async () => {
       const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'discord',
-        options: { redirectTo: REDIRECT_TO, scopes: 'identify email' }
+        provider:'discord', options:{ redirectTo:REDIRECT_TO, scopes:'identify email' }
       });
       if (error) showToast(error.message);
     };
     btnSignOut.onclick = async () => { await supabase.auth.signOut(); refreshSession(); };
 
     async function ensureProfile(user){
-      const m = user.user_metadata || {};
-      const nick   = (m.global_name || m.full_name || m.name || m.user_name || 'usuario').toString();
-      const avatar = m.avatar_url || m.picture || null;
+      const m=user.user_metadata||{};
+      const nick=(m.global_name||m.full_name||m.name||m.user_name||'usuario').toString();
+      const avatar=m.avatar_url||m.picture||null;
       const { error } = await supabase.from('profiles')
-        .upsert({ id: user.id, username: nick.toLowerCase(), avatar_url: avatar }, { onConflict: 'id' });
+        .upsert({ id:user.id, username:nick.toLowerCase(), avatar_url:avatar }, { onConflict:'id' });
       if (error) console.warn('profiles upsert error', error);
       return { nick, avatar };
     }
@@ -321,82 +303,57 @@
     async function refreshSession(){
       const { data:{ session } } = await supabase.auth.getSession();
       const user = session?.user ?? null;
-
       if (user){
         const { nick, avatar } = await ensureProfile(user);
-        whoami.textContent = `Conectado: ${nick}`;
-        whoami.classList.remove('hidden');
-        if (avatar){ avatarImg.src = avatar; avatarImg.classList.remove('hidden'); }
-        btnSignOut.classList.remove('hidden');
-        authCard.classList.add('hidden');
-        app.classList.remove('hidden');
+        whoami.textContent=`Conectado: ${nick}`; whoami.classList.remove('hidden');
+        if (avatar){ avatarImg.src=avatar; avatarImg.classList.remove('hidden'); }
+        btnSignOut.classList.remove('hidden'); authCard.classList.add('hidden'); app.classList.remove('hidden');
         await Promise.all([loadLogs(), bootWeekly(), initParticipantsUI()]);
       }else{
-        authCard.classList.remove('hidden');
-        app.classList.add('hidden');
-        whoami.classList.add('hidden');
-        avatarImg.classList.add('hidden');
-        btnSignOut.classList.add('hidden');
+        authCard.classList.remove('hidden'); app.classList.add('hidden');
+        whoami.classList.add('hidden'); avatarImg.classList.add('hidden'); btnSignOut.classList.add('hidden');
       }
     }
-
     supabase.auth.onAuthStateChange(()=>refreshSession());
     refreshSession();
 
-    // ========= PARTICIPANTES: chips + autocomplete =========
-    const selectedParts = new Set();
-    let directory = []; // nombres de profiles.username + tabla participants
-
-    const norm = s => s.trim().replace(/\s+/g,' ');
-    const esc  = s => (s||'').replaceAll('<','&lt;').replaceAll('>','&gt;');
+    // ===== PARTICIPANTES: chips + autocomplete =====
+    const selectedParts=new Set(); let directory=[]; // perfiles.username + participants.name
+    const norm=s=>s.trim().replace(/\s+/g,' '); const esc=s=>(s||'').replaceAll('<','&lt;').replaceAll('>','&gt;');
 
     function addChip(name){
-      const n = norm(name);
-      if (!n || selectedParts.has(n)) return;
+      const n=norm(name); if(!n||selectedParts.has(n)) return;
       selectedParts.add(n);
-      const chip = document.createElement('span');
-      chip.className = 'chip';
-      chip.dataset.name = n;
-      chip.innerHTML = `${esc(n)} <button title="Quitar">×</button>`;
-      chip.querySelector('button').onclick = () => { selectedParts.delete(n); chip.remove(); };
+      const chip=document.createElement('span');
+      chip.className='chip'; chip.dataset.name=n;
+      chip.innerHTML=`${esc(n)} <button title="Quitar">×</button>`;
+      chip.querySelector('button').onclick=()=>{selectedParts.delete(n);chip.remove();};
       chipsBox.appendChild(chip);
     }
 
     function renderSuggestions(q=''){
-      const needle = q.toLowerCase();
-      const base = directory.filter(n => !selectedParts.has(n));
-      const items = needle ? base.filter(n => n.toLowerCase().includes(needle)) : base;
-      const top = items.slice(0,8);
-
-      let html = top.map(n=>`<div class="suggestItem">${esc(n)}</div>`).join('');
-      const exists = directory.some(n => n.toLowerCase() === needle);
-      if (q && !exists) html += `<div class="suggestItem create">Crear “${esc(q)}”</div>`;
-
-      suggestBox.innerHTML = html || `<div class="suggestItem muted">Sin resultados</div>`;
+      const needle=q.toLowerCase(); const base=directory.filter(n=>!selectedParts.has(n));
+      const items=needle?base.filter(n=>n.toLowerCase().includes(needle)):base; const top=items.slice(0,8);
+      let html=top.map(n=>`<div class="suggestItem">${esc(n)}</div>`).join('');
+      const exists=directory.some(n=>n.toLowerCase()===needle);
+      if(q && !exists) html+=`<div class="suggestItem create">Crear “${esc(q)}”</div>`;
+      suggestBox.innerHTML=html || `<div class="suggestItem muted">Sin resultados</div>`;
       suggestBox.classList.toggle('hidden', false);
-
       [...suggestBox.querySelectorAll('.suggestItem')].forEach(it=>{
-        it.onclick = async () => {
-          const text = it.classList.contains('create') ? q : it.textContent;
-          if (it.classList.contains('create')) await createParticipant(text);
-          addChip(text);
-          participantsInput.value = '';
-          suggestBox.classList.add('hidden');
-          participantsInput.focus();
+        it.onclick=async()=>{
+          const text=it.classList.contains('create')?q:it.textContent;
+          if(it.classList.contains('create')) await createParticipant(text);
+          addChip(text); participantsInput.value=''; suggestBox.classList.add('hidden'); participantsInput.focus();
         };
       });
     }
 
     async function createParticipant(name){
       const { data:{ session } } = await supabase.auth.getSession();
-      const user = session?.user ?? null;
-      if (!user) { showToast('No autenticado'); return; }
-      const n = norm(name);
-      const { error } = await supabase.from('participants').insert({ name: n, created_by: user.id });
-      if (error && !/duplicate/i.test(error.message)) {
-        showToast(error.message);
-        return;
-      }
+      const user=session?.user ?? null; if(!user){showToast('No autenticado');return;}
+      const n=norm(name);
+      const { error } = await supabase.from('participants').insert({ name:n, created_by:user.id });
+      if (error && !/duplicate/i.test(error.message)) { showToast(error.message); return; }
       if (!directory.includes(n)) directory.push(n);
     }
 
@@ -405,99 +362,57 @@
         supabase.from('profiles').select('username'),
         supabase.from('participants').select('name')
       ]);
-      const set = new Set();
-      (p1||[]).forEach(r=>r.username && set.add(r.username));
-      (p2||[]).forEach(r=>r.name && set.add(r.name));
-      directory = Array.from(set).sort((a,b)=>a.localeCompare(b));
+      const set=new Set(); (p1||[]).forEach(r=>r.username&&set.add(r.username)); (p2||[]).forEach(r=>r.name&&set.add(r.name));
+      directory=Array.from(set).sort((a,b)=>a.localeCompare(b));
     }
 
-    participantsInput.addEventListener('input', e => renderSuggestions(e.target.value));
-    participantsInput.addEventListener('focus', () => renderSuggestions(participantsInput.value));
-    document.addEventListener('click', (e)=>{
-      if (!suggestBox.contains(e.target) && e.target !== participantsInput) suggestBox.classList.add('hidden');
-    });
-    participantsInput.addEventListener('keydown', (e)=>{
-      if (e.key === 'Enter' || e.key === ','){
-        e.preventDefault();
-        const val = norm(participantsInput.value);
-        if (val) addChip(val);
-        participantsInput.value = '';
-        suggestBox.classList.add('hidden');
-      }
+    participantsInput.addEventListener('input', e=>renderSuggestions(e.target.value));
+    participantsInput.addEventListener('focus', ()=>renderSuggestions(participantsInput.value));
+    document.addEventListener('click', e=>{ if(!suggestBox.contains(e.target) && e.target!==participantsInput) suggestBox.classList.add('hidden'); });
+    participantsInput.addEventListener('keydown', e=>{
+      if(e.key==='Enter'||e.key===','){ e.preventDefault(); const val=norm(participantsInput.value); if(val) addChip(val); participantsInput.value=''; suggestBox.classList.add('hidden'); }
     });
 
-    async function initParticipantsUI(){
-      selectedParts.clear();
-      chipsBox.innerHTML = '';
-      await loadDirectory();
-      renderSuggestions('');
-    }
+    async function initParticipantsUI(){ selectedParts.clear(); chipsBox.innerHTML=''; await loadDirectory(); renderSuggestions(''); }
 
-    // ========= FORM LOG =========
-    function updateAmountVisibility(){
-      const need = REQUIRES_AMOUNT.has(category.value);
-      amountWrap.classList.toggle('hidden', !need);
-      amountHint.classList.toggle('hidden', !need);
-    }
-    category.addEventListener('change', updateAmountVisibility);
-    updateAmountVisibility();
+    // ===== FORM LOG =====
+    function updateAmountVisibility(){ const need=REQUIRES_AMOUNT.has(category.value); amountWrap.classList.toggle('hidden',!need); amountHint.classList.toggle('hidden',!need); }
+    category.addEventListener('change', updateAmountVisibility); updateAmountVisibility();
 
-    btnSubmit.onclick = async () => {
-      const parts = Array.from(selectedParts);
-      if (parts.length===0) return showToast('Agrega al menos un participante');
+    btnSubmit.onclick = async ()=>{
+      const parts=Array.from(selectedParts); if(parts.length===0) return showToast('Agrega al menos un participante');
+      const { data:{ session } } = await supabase.auth.getSession(); const user=session?.user ?? null; if(!user) return showToast('No autenticado');
+      const cat=category.value; const need=REQUIRES_AMOUNT.has(cat);
+      const amt=amount.value ? Number(amount.value) : null; if(need && !(amt>=0)) return showToast('La cantidad es obligatoria');
 
-      const { data:{ session } } = await supabase.auth.getSession();
-      const user = session?.user ?? null;
-      if (!user) return showToast('No autenticado');
+      const payload={ user_id:user.id, participants:parts, category:cat, amount:need?amt:null, notes:notes.value||null };
+      const { error } = await supabase.from('logs').insert(payload); if(error) return showToast(error.message);
 
-      const cat = category.value;
-      const need = REQUIRES_AMOUNT.has(cat);
-      const amt = amount.value ? Number(amount.value) : null;
-      if (need && !(amt>=0)) return showToast('La cantidad es obligatoria');
-
-      const payload = {
-        user_id: user.id,
-        participants: parts,
-        category: cat,
-        amount: need ? amt : null,
-        notes: notes.value || null
-      };
-
-      const { error } = await supabase.from('logs').insert(payload);
-      if (error) return showToast(error.message);
-
-      // limpiar UI
-      selectedParts.clear(); chipsBox.innerHTML=''; participantsInput.value='';
-      amount.value=''; notes.value='';
-      showToast('Log guardado');
-      await loadLogs(); bootWeekly();
-      await loadDirectory(); // para que el nuevo participante quede disponible globalmente
+      selectedParts.clear(); chipsBox.innerHTML=''; participantsInput.value=''; amount.value=''; notes.value='';
+      showToast('Log guardado'); await loadLogs(); bootWeekly(); await loadDirectory();
     };
 
-    // ========= LISTADO (join de perfiles del lado del cliente) =========
+    // ===== LISTADO (join de perfiles en el cliente) =====
     async function loadLogs(){
-      let { data: logs, error } = await supabase.from('logs')
-        .select('id, created_at, user_id, participants, category, amount, notes')
-        .order('created_at',{ascending:false})
+      let { data: logs, error } = await supabase
+        .from('logs')
+        .select('id,created_at,user_id,participants,category,amount,notes')  // una línea: evita 400
+        .order('created_at', { ascending:false })
         .limit(200);
-      if (error){ showToast(error.message); return; }
+      if (error){ console.error('loadLogs error:', error); showToast(error.message||'Error al cargar logs'); return; }
+      if (filterCat.value) logs = (logs||[]).filter(r=>r.category===filterCat.value);
 
-      if (filterCat.value) logs = (logs||[]).filter(r=>r.category === filterCat.value);
-
-      // construir map de perfiles (id -> {username, avatar_url})
       const ids = Array.from(new Set((logs||[]).map(r=>r.user_id))).filter(Boolean);
-      let profilesMap = {};
+      let pmap = {};
       if (ids.length){
-        const { data: profs } = await supabase.from('profiles')
-          .select('id, username, avatar_url')
-          .in('id', ids);
-        profilesMap = Object.fromEntries((profs||[]).map(p=>[p.id, { username:p.username, avatar_url:p.avatar_url }]));
+        const { data: profs } = await supabase.from('profiles').select('id,username,avatar_url').in('id', ids);
+        pmap = Object.fromEntries((profs||[]).map(p=>[p.id,{username:p.username,avatar_url:p.avatar_url}]));
       }
-
-      renderTable(logs||[], profilesMap);
+      renderTable(logs||[], pmap);
     }
 
     function renderTable(rows, pmap){
+      const esc = s => (s||'').replaceAll('<','&lt;').replaceAll('>','&gt;');
       logsTable.innerHTML = rows.map(r=>{
         const date = new Date(r.created_at).toLocaleString();
         const prof = pmap?.[r.user_id] || {};
@@ -506,142 +421,82 @@
         const parts= (r.participants||[]).join(', ');
         const amt  = (r.amount ?? '') === '' ? '—' : r.amount;
         const cat  = (CAT_LABEL[r.category] || r.category).replace('_',' ');
-        const safe = (s)=> (s||'').replaceAll('<','&lt;').replaceAll('>','&gt;');
         return `<tr>
           <td>${date}</td>
-          <td>${ava}${safe(who)}</td>
-          <td><span class="tag">${safe(cat)}</span></td>
-          <td>${safe(parts)}</td>
+          <td>${ava}${esc(who)}</td>
+          <td><span class="tag">${esc(cat)}</span></td>
+          <td>${esc(parts)}</td>
           <td>${amt}</td>
-          <td>${safe(r.notes||'')}</td>
+          <td>${esc(r.notes||'')}</td>
         </tr>`;
       }).join('');
     }
+    btnReload.onclick=loadLogs; filterCat.onchange=loadLogs;
 
-    btnReload.onclick = loadLogs;
-    filterCat.onchange = loadLogs;
-
-    btnCSV.onclick = async () => {
-      let query = supabase.from('logs').select('*').order('created_at',{ascending:false}).limit(2000);
-      if (filterCat.value) query = query.eq('category', filterCat.value);
-      const { data, error } = await query;
+    btnCSV.onclick = async ()=>{
+      const { data, error } = await supabase.from('logs')
+        .select('created_at,category,participants,amount,notes,user_id')  // una línea
+        .order('created_at',{ascending:false})
+        .limit(2000);
       if (error) return showToast(error.message);
-      const header = ["created_at","category","participants","amount","notes","user_id"];
-      const csv = [header.join(",")]
-        .concat((data||[]).map(r=>[
-          r.created_at,
-          r.category,
-          `"${(r.participants||[]).join(' | ')}"`,
-          r.amount ?? "",
-          `"${(r.notes||"").replaceAll('"','""')}"`,
-          r.user_id
-        ].join(",")))
-        .join("\n");
-      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-      const url = URL.createObjectURL(blob);
-      const a = Object.assign(document.createElement('a'), { href:url, download:'logs.csv' });
-      document.body.appendChild(a); a.click(); a.remove();
-      URL.revokeObjectURL(url);
+      const header=["created_at","category","participants","amount","notes","user_id"];
+      const csv=[header.join(",")].concat((data||[]).map(r=>[
+        r.created_at,r.category,`"${(r.participants||[]).join(' | ')}"`,r.amount ?? "",`"${(r.notes||"").replaceAll('"','""')}"`,r.user_id
+      ].join(","))).join("\n");
+      const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+      const url=URL.createObjectURL(blob); const a=Object.assign(document.createElement('a'),{href:url,download:'logs.csv'});
+      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
     };
 
-    // ========= RESUMEN SEMANAL =========
-    function getWeekStart(date = new Date()){
-      const d = new Date(date);
-      const day = d.getDay();               // 0=Dom, 1=Lun
-      const diff = (day === 0 ? -6 : 1 - day);
-      d.setHours(0,0,0,0);
-      d.setDate(d.getDate() + diff);
-      return d;
-    }
-    function addDays(d, n){ const x = new Date(d); x.setDate(x.getDate()+n); return x; }
+    // ===== RESUMEN SEMANAL =====
+    function getWeekStart(date=new Date()){ const d=new Date(date); const day=d.getDay(); const diff=(day===0?-6:1-day); d.setHours(0,0,0,0); d.setDate(d.getDate()+diff); return d; }
+    function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
     function toISODate(d){ return d.toISOString(); }
-
     function setWeekInputFromDate(d){
-      const tgt = getWeekStart(d);
-      const year = new Intl.DateTimeFormat('en-CA',{year:'numeric'}).format(tgt);
-      const temp = new Date(Date.UTC(tgt.getFullYear(),0,4));
-      const week1 = getWeekStart(temp);
-      const diff = (tgt - week1) / (1000*60*60*24*7) + 1;
-      const weekNo = String(Math.round(diff)).padStart(2,'0');
-      weekInput.value = `${year}-W${weekNo}`;
+      const tgt=getWeekStart(d); const year=new Intl.DateTimeFormat('en-CA',{year:'numeric'}).format(tgt);
+      const temp=new Date(Date.UTC(tgt.getFullYear(),0,4)); const week1=getWeekStart(temp);
+      const diff=(tgt-week1)/(1000*60*60*24*7)+1; const weekNo=String(Math.round(diff)).padStart(2,'0');
+      weekInput.value=`${year}-W${weekNo}`;
     }
-
     function getWeekRangeFromInput(){
-      if (!weekInput.value){
-        const start = getWeekStart(new Date());
-        return { start, end: addDays(start,7) };
-      }
-      const [y, w] = weekInput.value.split('-W').map(Number);
-      const jan4 = new Date(Date.UTC(y,0,4));
-      const weekStart = getWeekStart(jan4);
-      const start = new Date(weekStart); start.setUTCDate(weekStart.getUTCDate() + (w-1)*7);
-      return { start: new Date(start), end: addDays(start,7) };
+      if(!weekInput.value){ const start=getWeekStart(new Date()); return { start, end:addDays(start,7) }; }
+      const [y,w]=weekInput.value.split('-W').map(Number); const jan4=new Date(Date.UTC(y,0,4)); const weekStart=getWeekStart(jan4);
+      const start=new Date(weekStart); start.setUTCDate(weekStart.getUTCDate()+(w-1)*7); return { start:new Date(start), end:addDays(start,7) };
     }
-
     async function loadWeeklySummary(){
       const { start, end } = getWeekRangeFromInput();
-      let { data, error } = await supabase.from('logs')
-        .select('category, amount, created_at')
+      const { data, error } = await supabase.from('logs')
+        .select('category,amount,created_at')   // una línea
         .gte('created_at', toISODate(start))
         .lt('created_at',  toISODate(end));
-      if (error){ showToast(error.message); return; }
-
-      const summary = {};
-      for (const cat of Object.keys(CAT_LABEL)) summary[cat] = { count:0, amountSum:0 };
-
-      for (const r of (data||[])){
-        const cat = r.category;
-        if (REQUIRES_AMOUNT.has(cat)) summary[cat].amountSum += Number(r.amount || 0);
-        else summary[cat].count += 1;
-      }
-
+      if (error){ console.error('weekly error:', error); showToast(error.message||'Error en resumen'); return; }
+      const summary={}; for(const cat of Object.keys(CAT_LABEL)) summary[cat]={count:0,amountSum:0};
+      for(const r of (data||[])){ const c=r.category; if(REQUIRES_AMOUNT.has(c)) summary[c].amountSum += Number(r.amount||0); else summary[c].count += 1; }
       weeklyGrid.innerHTML = Object.entries(summary).map(([cat, vals])=>{
-        const label = CAT_LABEL[cat] || cat;
-        const requires = REQUIRES_AMOUNT.has(cat);
-        const value = requires ? (vals.amountSum || 0) : (vals.count || 0);
-        const sub   = requires ? 'Total semanal' : 'Acciones esta semana';
-        const cls   = requires ? 'kpi req' : 'kpi';
-        return `
-          <div class="${cls}">
-            <div class="kpi-label">${label}</div>
-            <div class="kpi-value">${value}</div>
-            <div class="kpi-sub">${sub}</div>
-          </div>
-        `;
+        const label=CAT_LABEL[cat]||cat; const requires=REQUIRES_AMOUNT.has(cat);
+        const value=requires ? (vals.amountSum||0) : (vals.count||0);
+        const sub=requires ? 'Total semanal' : 'Acciones esta semana'; const cls=requires ? 'kpi req':'kpi';
+        return `<div class="${cls}"><div class="kpi-label">${label}</div><div class="kpi-value">${value}</div><div class="kpi-sub">${sub}</div></div>`;
       }).join('');
     }
-
-    btnThisWeek.onclick = ()=>{ setWeekInputFromDate(new Date()); loadWeeklySummary(); };
-    btnPrevWeek.onclick = ()=>{ const r=getWeekRangeFromInput(); setWeekInputFromDate(addDays(r.start,-7)); loadWeeklySummary(); };
-    btnNextWeek.onclick = ()=>{ const r=getWeekRangeFromInput(); setWeekInputFromDate(addDays(r.start,7));  loadWeeklySummary(); };
-    weekInput.onchange  = loadWeeklySummary;
-
-    btnExportWeeklyCSV.onclick = async ()=>{
-      const { start, end } = getWeekRangeFromInput();
-      let { data, error } = await supabase.from('logs')
-        .select('created_at, category, participants, amount, notes, user_id')
-        .gte('created_at', toISODate(start))
-        .lt('created_at',  toISODate(end));
-      if (error){ showToast(error.message); return; }
-
-      const header = ["created_at","category","participants","amount","notes","user_id"];
-      const csv = [header.join(",")]
-        .concat((data||[]).map(r=>[
-          r.created_at,
-          r.category,
-          `"${(r.participants||[]).join(' | ')}"`,
-          r.amount ?? "",
-          `"${(r.notes||"").replaceAll('"','""')}"`,
-          r.user_id
-        ].join(",")))
-        .join("\n");
-      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-      const url  = URL.createObjectURL(blob);
-      const a = Object.assign(document.createElement('a'), { href:url, download:`logs_semana_${new Date().toISOString().slice(0,10)}.csv` });
-      document.body.appendChild(a); a.click(); a.remove();
-      URL.revokeObjectURL(url);
+    btnThisWeek.onclick=()=>{ setWeekInputFromDate(new Date()); loadWeeklySummary(); };
+    btnPrevWeek.onclick=()=>{ const r=getWeekRangeFromInput(); setWeekInputFromDate(addDays(r.start,-7)); loadWeeklySummary(); };
+    btnNextWeek.onclick=()=>{ const r=getWeekRangeFromInput(); setWeekInputFromDate(addDays(r.start,7));  loadWeeklySummary(); };
+    weekInput.onchange=loadWeeklySummary;
+    btnExportWeeklyCSV.onclick=async()=>{
+      const { start, end }=getWeekRangeFromInput();
+      const { data, error }=await supabase.from('logs')
+        .select('created_at,category,participants,amount,notes,user_id')
+        .gte('created_at', toISODate(start)).lt('created_at', toISODate(end));
+      if(error){ showToast(error.message); return; }
+      const header=["created_at","category","participants","amount","notes","user_id"];
+      const csv=[header.join(",")].concat((data||[]).map(r=>[
+        r.created_at,r.category,`"${(r.participants||[]).join(' | ')}"`,r.amount ?? "",`"${(r.notes||"").replaceAll('"','""')}"`,r.user_id
+      ].join(","))).join("\n");
+      const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const url=URL.createObjectURL(blob);
+      const a=Object.assign(document.createElement('a'),{href:url,download:`logs_semana_${new Date().toISOString().slice(0,10)}.csv`});
+      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
     };
-
     function bootWeekly(){ setWeekInputFromDate(new Date()); loadWeeklySummary(); }
   </script>
 </body>
