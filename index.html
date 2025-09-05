@@ -398,6 +398,31 @@
       (p2||[]).forEach(r => r.name     && set.add(canon(r.name)));
       directory = Array.from(set).sort();
     }
+    // Guarda en la tabla participants los nombres que aún no existen (en minúsculas)
+    async function ensureParticipantsSaved(parts){
+      // parts ya vienen en forma canónica (minúsculas) desde selectedParts
+      const missing = parts.filter(p => !directory.includes(p));
+      if (!missing.length) return;
+    
+      const { data:{ session } } = await supabase.auth.getSession();
+      const user = session?.user ?? null; 
+      if (!user) return;
+    
+      const rows = missing.map(n => ({ name: n, created_by: user.id }));
+      const { error } = await supabase
+        .from('participants')
+        .upsert(rows, { onConflict: 'name' }); // evita duplicados por nombre
+    
+      if (error){
+        console.error('ensureParticipantsSaved', error);
+        showToast(error.message);
+        return;
+      }
+    
+      // actualiza el directorio en memoria
+      directory.push(...missing);
+    }
+
     
     participantsInput.addEventListener('input', e=>renderSuggestions(e.target.value));
     participantsInput.addEventListener('focus', ()=>renderSuggestions(participantsInput.value));
