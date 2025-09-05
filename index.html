@@ -221,73 +221,38 @@
 
   <script type="module">
 
-    // ⚠️ reemplaza con tu URL EXACTA de Pages, con / final
-    const SITE_URL   = 'https://reencabj.github.io/logsyy/'; 
-    const REDIRECT_TO = SITE_URL; // usa siempre la misma
-
-    // ===== CONFIG & CLIENT =====
-    const SUPABASE_URL  = "https://dxohxpjeymoenqnvmqko.supabase.co"; // <-- reemplazar
-    const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4b2h4cGpleW1vZW5xbnZtcWtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcwNDQ1MjcsImV4cCI6MjA3MjYyMDUyN30.lIDbq0OzEghpqtXCaRIbU33bcMq_l77zFAWTbrB0myE";
-    const REDIRECT_TO   = location.origin + location.pathname;
-
-   import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
+    // === OAuth/Client (único bloque) ===
+    const SITE_URL    = 'https://reencabj.github.io/logsyy/';  // TU URL EXACTA con / final
+    const REDIRECT_TO = SITE_URL;
+    
+    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+    
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON, {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
-        // lo manejamos nosotros con exchangeCodeForSession
-        detectSessionInUrl: false,
+        detectSessionInUrl: false,   // lo manejamos nosotros
         storageKey: 'yy-logs-auth'
       }
     });
     
-    // Intercambia ?code=&state= por una sesión y limpia la URL
+    // Intercambio del code de Discord -> sesión + limpiar URL
     async function handleOAuthRedirect() {
       const url = new URL(window.location.href);
-      const hasCode  = url.searchParams.get('code');
-      const hasState = url.searchParams.get('state');
-    
-      if (hasCode && hasState) {
+      if (url.searchParams.get('code') && url.searchParams.get('state')) {
         const { error } = await supabase.auth.exchangeCodeForSession(url.toString());
-        if (error) {
-          console.error('exchangeCodeForSession:', error);
-        }
-        // Limpia los parámetros para que no se repita al recargar
+        if (error) console.error('exchangeCodeForSession:', error);
+        // limpiar la URL para evitar reintentos infinitos
         window.history.replaceState({}, document.title, SITE_URL);
       }
     }
-    
-    // Llamá SIEMPRE esto ANTES de leer la sesión
     await handleOAuthRedirect();
     
-    // Suscripción y primera carga
-    supabase.auth.onAuthStateChange((_e, _s) => refreshSession());
+    // Suscripción + primer render
+    supabase.auth.onAuthStateChange((_e,_s)=>refreshSession());
     refreshSession();
     
-    async function refreshSession(){
-      const { data:{ session } } = await supabase.auth.getSession();
-      const user = session?.user ?? null;
-    
-      if (user){
-        const { nick, avatar } = await ensureProfile(user);
-        whoami.textContent = `Conectado: ${nick}`;
-        whoami.classList.remove('hidden');
-        if (avatar){ avatarImg.src = avatar; avatarImg.classList.remove('hidden'); }
-        btnSignOut.classList.remove('hidden');
-        authCard.classList.add('hidden');
-        app.classList.remove('hidden');
-        await Promise.all([loadLogs(), bootWeekly(), initParticipantsUI()]);
-      } else {
-        authCard.classList.remove('hidden');
-        app.classList.add('hidden');
-        whoami.classList.add('hidden');
-        avatarImg.classList.add('hidden');
-        btnSignOut.classList.add('hidden');
-      }
-    }
-    
-    // Botón de login (sin cambios importantes)
+    // Botón Discord
     btnDiscord.onclick = async () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'discord',
@@ -296,9 +261,6 @@
       if (error) showToast(error.message);
     };
 
-    
-    // Llamar ANTES de leer la sesión
-    await handleOAuthRedirect();
     
 
 
