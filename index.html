@@ -494,6 +494,65 @@
       const [y,w]=weekInput.value.split('-W').map(Number); const jan4=new Date(Date.UTC(y,0,4)); const weekStart=getWeekStart(jan4);
       const start=new Date(weekStart); start.setUTCDate(weekStart.getUTCDate()+(w-1)*7); return { start:new Date(start), end:addDays(start,7) };
     }
+    // === Handlers de navegación y export de la SEMANA ===
+      function updateSummaries(){
+        // refresca ambos resúmenes
+        loadWeeklySummary();
+        loadWeeklyByParticipant();
+      }
+      
+      btnThisWeek.onclick = () => {
+        setWeekInputFromDate(new Date());
+        updateSummaries();
+      };
+      
+      btnPrevWeek.onclick = () => {
+        const { start } = getWeekRangeFromInput();
+        setWeekInputFromDate(addDays(start, -7));
+        updateSummaries();
+      };
+      
+      btnNextWeek.onclick = () => {
+        const { start } = getWeekRangeFromInput();
+        setWeekInputFromDate(addDays(start,  7));
+        updateSummaries();
+      };
+      
+      weekInput.onchange = updateSummaries;
+      
+      // Export general (todos los logs de la semana actual del selector)
+      btnExportWeeklyCSV.onclick = async () => {
+        const { start, end } = getWeekRangeFromInput();
+        const { data, error } = await supabase
+          .from('logs')
+          .select('created_at,category,participants,amount,notes,user_id')
+          .gte('created_at', toISODate(start))
+          .lt('created_at',  toISODate(end));
+      
+        if (error){ showToast(error.message); return; }
+      
+        const header = ["created_at","category","participants","amount","notes","user_id"];
+        const csv = [header.join(",")]
+          .concat((data||[]).map(r => [
+            r.created_at,
+            r.category,
+            `"${(r.participants||[]).join(' | ')}"`,
+            r.amount ?? "",
+            `"${(r.notes||"").replaceAll('"','""')}"`,
+            r.user_id
+          ].join(",")))
+          .join("\n");
+      
+        const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+        const url  = URL.createObjectURL(blob);
+        const a = Object.assign(document.createElement('a'), {
+          href:url,
+          download:`logs_semana_${new Date().toISOString().slice(0,10)}.csv`
+        });
+        document.body.appendChild(a); a.click(); a.remove();
+        URL.revokeObjectURL(url);
+      };
+
 
     async function loadWeeklySummary(){
       const { start, end } = getWeekRangeFromInput();
