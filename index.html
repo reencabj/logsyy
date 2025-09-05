@@ -274,10 +274,10 @@
     function showToast(msg){ toastEl.textContent=msg; toastEl.classList.remove('hidden'); setTimeout(()=>toastEl.classList.add('hidden'),2200); }
 
     /***** AUTH: Usuario + contraseña *****/
-    // Login con usuario/contraseña (alias -> alias@yy.local o email completo)
+    // Login con alias -> alias@yy.local o email completo
     btnLogin.onclick = async () => {
       const uRaw = (loginUser.value || '').trim();
-      const u = uRaw.toLowerCase();      // normalizo
+      const u = uRaw.toLowerCase();    // normalizo
       const p = loginPass.value || '';
       if (!u || !p) return showToast('Completá usuario y contraseña');
     
@@ -289,19 +289,18 @@
     
       if (error) {
         console.error('signInWithPassword error:', error);
+        let msg = (error.message || 'Error al iniciar sesión').toLowerCase();
     
-        let msg = error.message || 'Error al iniciar sesión';
-        const low = msg.toLowerCase();
-    
-        if (low.includes('email not confirmed')) {
-          msg = 'Usuario no confirmado. En Supabase → Auth → Users marcá "Confirm user" o activá "Auto-confirm".';
-        } else if (low.includes('signups not allowed') || low.includes('disabled')) {
-          msg = 'El proveedor Email está desactivado. Activalo en Auth → Providers → Email.';
-        } else if (low.includes('invalid login credentials')) {
-          msg = 'Credenciales inválidas. Revisá usuario/contraseña.';
+        if (msg.includes('email not confirmed')) {
+          showToast('Usuario no confirmado: en Supabase → Auth → Users marcá "Confirm user" o activa "Auto-confirm".');
+        } else if (msg.includes('signups not allowed') || msg.includes('disabled') || msg.includes('provider')) {
+          showToast('Proveedor Email desactivado. Activá Auth → Providers → Email.');
+    }
+        else if (msg.includes('invalid login credentials')) {
+          showToast('Credenciales inválidas. Revisá usuario/contraseña. Recordá: alias = alias@yy.local');
+        } else {
+          showToast(error.message || 'Error al iniciar sesión');
         }
-    
-        showToast(msg);
         return;
       }
     
