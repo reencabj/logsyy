@@ -5,87 +5,50 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Yakuza – Logs</title>
   <meta name="description" content="Sistema de logs Yakuza. Acceso con usuario y contraseña.">
-  <!-- Favicon inline para evitar 404 -->
+  <!-- Favicon inline -->
   <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" ry="12" fill="%239e8ced"/><text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="36" fill="%230a0a0e">Y</text></svg>'>
   <style>
     :root{
-      /* Yakuza: lila + grises */
-      --yy-lilac:#9e8ced;      /* primario */
-      --yy-lilac-dark:#7e6de0; /* tono oscuro */
-      --yy-lilac-light:#b7aaf2;/* tono claro */
-
-      --bg:#0a0a0e;
-      --bg-2:#0c0c12;
-      --panel:#12121a;
-      --bd:#222334;
-      --text:#e7e7e9;
-      --muted:#a3a7b3;
-      --alert:#ef4444;
-      --radius:14px;
-
-      /* Fondo (si ponés bg.jpg junto al index queda genial) */
-      --bg-image: url('./bg.jpg');
+      --yy-lilac:#9e8ced; --yy-lilac-dark:#7e6de0; --yy-lilac-light:#b7aaf2;
+      --bg:#0a0a0e; --bg-2:#0c0c12; --panel:#12121a; --bd:#222334; --text:#e7e7e9; --muted:#a3a7b3; --alert:#ef4444; --radius:14px;
+      --bg-image: url('./bg.jpg'); /* opcional */
     }
-
-    *{box-sizing:border-box}
-    html,body{height:100%}
+    *{box-sizing:border-box} html,body{height:100%}
     body{
-      margin:0;
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial;
-      color:var(--text);
-      background:
-        linear-gradient(180deg,var(--bg) 0%, var(--bg-2) 60%, var(--bg) 100%),
-        var(--bg-image) center/cover no-repeat fixed;
+      margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial; color:var(--text);
+      background: linear-gradient(180deg,var(--bg) 0%, var(--bg-2) 60%, var(--bg) 100%), var(--bg-image) center/cover no-repeat fixed;
       background-blend-mode: overlay;
     }
     a{color:var(--yy-lilac);text-decoration:none}
     .container{max-width:1100px;margin:0 auto;padding:24px}
-    .card{
-      background:var(--panel);
-      border:1px solid var(--bd);
-      border-radius:var(--radius);
-      padding:20px;
-      box-shadow:0 10px 30px rgba(0,0,0,.35)
-    }
-    h1{font-size:clamp(20px,4vw,32px);margin:0 0 8px}
-    h2{font-size:20px;margin:0 0 12px}
-    .muted{color:var(--muted)}
-    .hidden{display:none}
+    .card{background:var(--panel);border:1px solid var(--bd);border-radius:var(--radius);padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+    h1{font-size:clamp(20px,4vw,32px);margin:0 0 8px} h2{font-size:20px;margin:0 0 12px}
+    .muted{color:var(--muted)} .hidden{display:none}
 
-    .btn{
-      cursor:pointer;display:inline-flex;align-items:center;gap:10px;
-      padding:12px 16px;border-radius:12px;border:1px solid var(--bd);
-      background:#121221;color:var(--text)
-    }
-    .btn.primary{
-      background:linear-gradient(90deg, var(--yy-lilac-dark) 0%, var(--yy-lilac) 60%, var(--yy-lilac-light) 100%);
-      border:none;
-    }
+    .btn{cursor:pointer;display:inline-flex;align-items:center;gap:10px;padding:12px 16px;border-radius:12px;border:1px solid var(--bd);background:#121221;color:var(--text)}
+    .btn.primary{background:linear-gradient(90deg,var(--yy-lilac-dark),var(--yy-lilac),var(--yy-lilac-light));border:none}
 
-    input,select,textarea{
-      width:100%;background:#0f0f15;border:1px solid var(--bd);color:var(--text);
-      border-radius:10px;padding:12px 14px;outline:none
-    }
+    input,select,textarea{width:100%;background:#0f0f15;border:1px solid var(--bd);color:var(--text);border-radius:10px;padding:12px 14px;outline:none}
     input:focus,select:focus,textarea:focus{border-color:var(--yy-lilac)}
-    .row{display:grid;gap:14px}
-    @media (min-width:720px){.grid-2{grid-template-columns:1fr 1fr}}
-
+    .row{display:grid;gap:14px} @media (min-width:720px){.grid-2{grid-template-columns:1fr 1fr}}
     .pill{display:inline-flex;align-items:center;gap:10px;padding:6px 10px;border:1px solid var(--bd);border-radius:999px;background:#101019}
     .tag{font-size:12px;padding:4px 8px;border-radius:999px;border:1px solid var(--bd);background:#0f0f18}
-    .flex{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-    .right{margin-left:auto}
-
+    .flex{display:flex;gap:10px;align-items:center;flex-wrap:wrap} .right{margin-left:auto}
     .table{width:100%;border-collapse:collapse;font-size:14px}
     .table th,.table td{padding:10px;border-bottom:1px solid var(--bd);white-space:nowrap}
     .avatar{width:24px;height:24px;border-radius:999px;object-fit:cover;vertical-align:middle;margin-right:6px}
-
     .toast{position:fixed;bottom:18px;right:18px;background:#121226;border:1px solid var(--bd);padding:12px 14px;border-radius:12px}
 
-    /* Resumen semanal */
+    /* Tabs */
+    .tabs{display:flex;gap:8px;margin-top:8px;margin-bottom:12px}
+    .tab-btn{padding:10px 14px;border-radius:999px;border:1px solid var(--bd);background:#101019;color:var(--text)}
+    .tab-btn.active{border-color:var(--yy-lilac);box-shadow:inset 0 0 0 1px var(--yy-lilac)}
+
+    /* Resumen */
     .yy-grid-cards{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
     .kpi{background:linear-gradient(180deg,#12121a 0%, #101018 100%);border:1px solid var(--bd);border-radius:var(--radius);padding:14px}
     .kpi .kpi-label{font-size:13px;color:var(--muted)}
-    .kpi .kpi-value{font-size:28px;font-weight:700;margin-top:4px;color:var(--yy-lilac)} /* números SIEMPRE lila */
+    .kpi .kpi-value{font-size:28px;font-weight:700;margin-top:4px;color:var(--yy-lilac)}
     .kpi .kpi-sub{font-size:12px;color:var(--muted);margin-top:2px}
 
     /* Chips participantes */
@@ -118,270 +81,254 @@
       <h2>Ingresá con usuario y contraseña</h2>
       <p class="muted">Podés usar <strong>email completo</strong> (recomendado) o solo alias (se mapea a <code>alias@yy.local</code>).</p>
       <div class="row grid-2">
-        <div>
-          <label>Usuario</label>
-          <input id="loginUser" placeholder="ej: mikaro o mikaro@yy.local">
-        </div>
-        <div>
-          <label>Contraseña</label>
-          <input id="loginPass" type="password" placeholder="••••••••">
-        </div>
+        <div><label>Usuario</label><input id="loginUser" placeholder="ej: mikaro o mikaro@yy.local"></div>
+        <div><label>Contraseña</label><input id="loginPass" type="password" placeholder="••••••••"></div>
       </div>
-      <div class="flex" style="margin-top:12px">
-        <button id="btnLogin" class="btn primary">Entrar</button>
-      </div>
+      <div class="flex" style="margin-top:12px"><button id="btnLogin" class="btn primary">Entrar</button></div>
     </div>
 
     <!-- App -->
     <div id="app" class="hidden">
-      <!-- Resumen semanal (general) -->
-      <div class="card" style="margin-top:16px">
-        <div class="flex">
-          <h2>Resumen semanal</h2>
-          <div class="right flex">
-            <input id="weekInput" type="week">
-            <button id="btnPrevWeek" class="btn">◀ Semana anterior</button>
-            <button id="btnNextWeek" class="btn">Semana siguiente ▶</button>
-            <button id="btnThisWeek" class="btn">Esta semana</button>
-            <button id="btnExportWeeklyCSV" class="btn">Exportar CSV</button>
-          </div>
-        </div>
-        <div id="weeklyGrid" class="yy-grid-cards" style="margin-top:12px"></div>
-        <div class="muted" style="margin-top:8px">
-          * En categorías con cantidad (Venta de Meta, Crafteo Armas, Tiradas Meta) se muestra el <strong>total</strong>. En el resto, la <strong>cantidad de acciones</strong>.
-        </div>
+      <!-- Tabs -->
+      <div class="tabs">
+        <button id="tabLogs" class="tab-btn active">LOGS</button>
+        <button id="tabSummaries" class="tab-btn">RESÚMENES</button>
       </div>
 
-      <!-- Resumen semanal por participante + puntaje -->
-      <div class="card" style="margin-top:16px">
-        <div class="flex">
-          <h2>Resumen por participante</h2>
-          <div class="right flex">
-            <button id="btnExportWeeklyUsersCSV" class="btn">Exportar CSV</button>
+      <!-- Panel: LOGS -->
+      <div id="panelLogs">
+        <!-- Nuevo log -->
+        <div class="card" style="margin-top:4px">
+          <h2>Nuevo log</h2>
+          <div class="row">
+            <div>
+              <label>Participantes</label>
+              <div id="chipsBox" class="chips"></div>
+              <input id="participantsInput" placeholder="Escribe un nombre y presiona Enter">
+              <div id="suggestBox" class="suggestBox hidden"></div>
+              <div class="muted" style="margin-top:6px">Elegí de la lista o creá uno nuevo con Enter.</div>
+            </div>
+            <div>
+              <label>Categoría</label>
+              <select id="category">
+                <option value="almacenes">Almacenes</option>
+                <option value="venta_meta">Venta de Meta</option>
+                <option value="encargos_armas">Encargos Armas</option>
+                <option value="crafteo_armas">Crafteo / Compra de Armas</option>
+                <option value="encargos_fleccas">Encargos / Fleccas</option>
+                <option value="materiales_bonos">Materiales / Bonos</option>
+                <option value="encargos_quimicos">Encargos Químicos</option>
+                <option value="tiradas_meta">Tiradas Metanfetamina</option>
+              </select>
+            </div>
+            <div id="amountWrap" class="hidden">
+              <label id="amountLabel">Cantidad (número)</label>
+              <input id="amount" type="number" min="0" step="1" placeholder="Ej: 25">
+            </div>
+            <div>
+              <label>Notas (opcional)</label>
+              <textarea id="notes" rows="3" placeholder="Detalles adicionales"></textarea>
+            </div>
+            <div class="flex">
+              <span id="amountHint" class="tag hidden"></span>
+              <button id="btnSubmit" class="btn primary right">Guardar log</button>
+            </div>
           </div>
         </div>
-        <div class="muted">
-          PUNTAJE = (Venta de Meta total / 20000) + (Materiales total / 1000) + (Crafteo total / 10) + (Almacenes + Enc. Armas + Enc. Químicos + Tiradas Meta + Enc. Fleccas).  
-          <br>(Para que <em>Materiales / Bonos</em> sume al puntaje, podés cargar un monto opcional en el log).
-        </div>
-        <div style="overflow:auto;margin-top:8px">
-          <table class="table" id="weeklyUserTable">
-            <thead>
-              <tr>
-                <th>Participante</th>
-                <th>Venta Meta (total)</th>
-                <th>Materiales (total)</th>
-                <th>Crafteo (total)</th>
-                <th>Almacenes</th>
-                <th>Enc. Armas</th>
-                <th>Enc. Químicos</th>
-                <th>Tiradas</th>
-                <th>Enc. Fleccas</th>
-                <th>Puntaje</th>
-              </tr>
-            </thead>
-            <tbody><!-- rows --></tbody>
-          </table>
-        </div>
-      </div>
 
-      <!-- Nuevo log -->
-      <div class="card" style="margin-top:16px">
-        <h2>Nuevo log</h2>
-        <div class="row">
-          <div>
-            <label>Participantes</label>
-            <div id="chipsBox" class="chips"></div>
-            <input id="participantsInput" placeholder="Escribe un nombre y presiona Enter">
-            <div id="suggestBox" class="suggestBox hidden"></div>
-            <div class="muted" style="margin-top:6px">Elegí de la lista o creá uno nuevo con Enter.</div>
-          </div>
-          <div>
-            <label>Categoría</label>
-            <select id="category">
-              <option value="almacenes">Almacenes</option>
-              <option value="venta_meta">Venta de Meta</option>
-              <option value="encargos_armas">Encargos Armas</option>
-              <option value="crafteo_armas">Crafteo / Compra de Armas</option>
-              <option value="encargos_fleccas">Encargos / Fleccas</option>
-              <option value="materiales_bonos">Materiales / Bonos</option>
-              <option value="encargos_quimicos">Encargos Químicos</option>
-              <option value="tiradas_meta">Tiradas Metanfetamina</option>
-            </select>
-          </div>
-          <div id="amountWrap" class="hidden">
-            <label id="amountLabel">Cantidad (número)</label>
-            <input id="amount" type="number" min="0" step="1" placeholder="Ej: 25">
-          </div>
-          <div>
-            <label>Notas (opcional)</label>
-            <textarea id="notes" rows="3" placeholder="Detalles adicionales"></textarea>
-          </div>
+        <!-- Registros recientes -->
+        <div class="card" style="margin-top:16px">
           <div class="flex">
-            <span id="amountHint" class="tag hidden"></span>
-            <button id="btnSubmit" class="btn primary right">Guardar log</button>
+            <h2>Registros recientes</h2>
+            <div class="right flex">
+              <select id="filterCat">
+                <option value="">Todas</option>
+                <option value="almacenes">Almacenes</option>
+                <option value="venta_meta">Venta de Meta</option>
+                <option value="encargos_armas">Encargos Armas</option>
+                <option value="crafteo_armas">Crafteo / Compra de Armas</option>
+                <option value="encargos_fleccas">Encargos / Fleccas</option>
+                <option value="materiales_bonos">Materiales / Bonos</option>
+                <option value="encargos_quimicos">Encargos Químicos</option>
+                <option value="tiradas_meta">Tiradas Metanfetamina</option>
+              </select>
+              <button id="btnReload" class="btn">Actualizar</button>
+              <button id="btnCSV" class="btn">Exportar CSV</button>
+            </div>
+          </div>
+          <div style="overflow:auto;margin-top:8px">
+            <table class="table" id="logsTable">
+              <thead>
+                <tr>
+                  <th>Fecha</th><th>Usuario</th><th>Categoría</th><th>Participantes</th><th>Cantidad</th><th>Notas</th>
+                </tr>
+              </thead>
+              <tbody><!-- rows --></tbody>
+            </table>
           </div>
         </div>
-      </div>
+      </div><!-- /panelLogs -->
 
-      <!-- Listado -->
-      <div class="card" style="margin-top:16px">
-        <div class="flex">
-          <h2>Registros recientes</h2>
-          <div class="right flex">
-            <select id="filterCat">
-              <option value="">Todas</option>
-              <option value="almacenes">Almacenes</option>
-              <option value="venta_meta">Venta de Meta</option>
-              <option value="encargos_armas">Encargos Armas</option>
-              <option value="crafteo_armas">Crafteo / Compra de Armas</option>
-              <option value="encargos_fleccas">Encargos / Fleccas</option>
-              <option value="materiales_bonos">Materiales / Bonos</option>
-              <option value="encargos_quimicos">Encargos Químicos</option>
-              <option value="tiradas_meta">Tiradas Metanfetamina</option>
-            </select>
-            <button id="btnReload" class="btn">Actualizar</button>
-            <button id="btnCSV" class="btn">Exportar CSV</button>
+      <!-- Panel: RESÚMENES -->
+      <div id="panelSummaries" class="hidden">
+        <!-- Resumen semanal general -->
+        <div class="card" style="margin-top:4px">
+          <div class="flex">
+            <h2>Resumen semanal</h2>
+            <div class="right flex">
+              <input id="weekInput" type="week">
+              <button id="btnPrevWeek" class="btn">◀ Semana anterior</button>
+              <button id="btnNextWeek" class="btn">Semana siguiente ▶</button>
+              <button id="btnThisWeek" class="btn">Esta semana</button>
+              <button id="btnExportWeeklyCSV" class="btn">Exportar CSV</button>
+            </div>
+          </div>
+          <div id="weeklyGrid" class="yy-grid-cards" style="margin-top:12px"></div>
+          <div class="muted" style="margin-top:8px">
+            * En categorías con cantidad (Venta de Meta, Crafteo Armas, Tiradas Meta) se muestra el <strong>total</strong>. En el resto, la <strong>cantidad de acciones</strong>.
           </div>
         </div>
-        <div style="overflow:auto;margin-top:8px">
-          <table class="table" id="logsTable">
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Usuario</th>
-                <th>Categoría</th>
-                <th>Participantes</th>
-                <th>Cantidad</th>
-                <th>Notas</th>
-              </tr>
-            </thead>
-            <tbody><!-- rows --></tbody>
-          </table>
+
+        <!-- Resumen por participante + puntaje -->
+        <div class="card" style="margin-top:16px">
+          <div class="flex">
+            <h2>Resumen por participante</h2>
+            <div class="right flex"><button id="btnExportWeeklyUsersCSV" class="btn">Exportar CSV</button></div>
+          </div>
+          <div class="muted">
+            PUNTAJE = (Venta de Meta total / 20000) + (Materiales total / 1000) + (Crafteo total / 10) + (Almacenes + Enc. Armas + Enc. Químicos + Tiradas Meta + Enc. Fleccas).
+          </div>
+          <div style="overflow:auto;margin-top:8px">
+            <table class="table" id="weeklyUserTable">
+              <thead>
+                <tr>
+                  <th>Participante</th>
+                  <th>Venta Meta (total)</th>
+                  <th>Materiales (total)</th>
+                  <th>Crafteo (total)</th>
+                  <th>Almacenes</th>
+                  <th>Enc. Armas</th>
+                  <th>Enc. Químicos</th>
+                  <th>Tiradas</th>
+                  <th>Enc. Fleccas</th>
+                  <th>Puntaje</th>
+                </tr>
+              </thead>
+              <tbody><!-- rows --></tbody>
+            </table>
+          </div>
         </div>
-      </div>
-    </div>
-  </div>
+      </div><!-- /panelSummaries -->
+    </div><!-- /app -->
+  </div><!-- /container -->
 
   <div id="toast" class="toast hidden"></div>
 
   <script type="module">
-    /***** CONFIG *****/
+    /***** SUPABASE *****/
     const SUPABASE_URL  = 'https://dxohxpjeymoenqnvmqko.supabase.co';
     const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4b2h4cGpleW1vZW5xbnZtcWtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcwNDQ1MjcsImV4cCI6MjA3MjYyMDUyN30.lIDbq0OzEghpqtXCaRIbU33bcMq_l77zFAWTbrB0myE';
-
     import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON, {
       auth: { persistSession:true, autoRefreshToken:true, detectSessionInUrl:false, storageKey:'yy-logs-auth' }
     });
-    window.sb = supabase; // para debug
+    window.sb = supabase; // debug
 
-    /***** REFS UI *****/
+    /***** UI refs *****/
     const authCard   = document.getElementById('authCard');
     const app        = document.getElementById('app');
     const whoami     = document.getElementById('whoami');
     const avatarImg  = document.getElementById('avatar');
     const btnSignOut = document.getElementById('btnSignOut');
-
     const loginUser  = document.getElementById('loginUser');
     const loginPass  = document.getElementById('loginPass');
     const btnLogin   = document.getElementById('btnLogin');
 
+    // Tabs
+    const tabLogs = document.getElementById('tabLogs');
+    const tabSummaries = document.getElementById('tabSummaries');
+    const panelLogs = document.getElementById('panelLogs');
+    const panelSummaries = document.getElementById('panelSummaries');
+
+    // Nuevo log + listado
     const participantsInput=document.getElementById('participantsInput');
     const chipsBox=document.getElementById('chipsBox'); const suggestBox=document.getElementById('suggestBox');
-
     const category=document.getElementById('category'); const amountWrap=document.getElementById('amountWrap');
     const amount=document.getElementById('amount'); const amountLabel=document.getElementById('amountLabel');
-    const amountHint=document.getElementById('amountHint');
-    const notes=document.getElementById('notes'); const btnSubmit=document.getElementById('btnSubmit');
-
+    const amountHint=document.getElementById('amountHint'); const notes=document.getElementById('notes'); const btnSubmit=document.getElementById('btnSubmit');
     const filterCat=document.getElementById('filterCat'); const btnReload=document.getElementById('btnReload');
     const btnCSV=document.getElementById('btnCSV'); const logsTable=document.querySelector('#logsTable tbody');
 
+    // Resúmenes
     const weekInput=document.getElementById('weekInput'); const btnPrevWeek=document.getElementById('btnPrevWeek');
     const btnNextWeek=document.getElementById('btnNextWeek'); const btnThisWeek=document.getElementById('btnThisWeek');
     const weeklyGrid=document.getElementById('weeklyGrid'); const btnExportWeeklyCSV=document.getElementById('btnExportWeeklyCSV');
+    const weeklyUserTableBody=document.querySelector('#weeklyUserTable tbody'); const btnExportWeeklyUsersCSV=document.getElementById('btnExportWeeklyUsersCSV');
 
-    const weeklyUserTableBody=document.querySelector('#weeklyUserTable tbody');
-    const btnExportWeeklyUsersCSV=document.getElementById('btnExportWeeklyUsersCSV');
+    const toastEl=document.getElementById('toast'); function showToast(msg){ toastEl.textContent=msg; toastEl.classList.remove('hidden'); setTimeout(()=>toastEl.classList.add('hidden'),2200); }
 
-    const toastEl=document.getElementById('toast');
-    function showToast(msg){ toastEl.textContent=msg; toastEl.classList.remove('hidden'); setTimeout(()=>toastEl.classList.add('hidden'),2200); }
-
-    /***** CATEGORÍAS *****/
+    /***** Categorías *****/
     const REQUIRES_AMOUNT = new Set(['venta_meta','crafteo_armas','tiradas_meta']);
-    const OPTIONAL_AMOUNT = new Set(['materiales_bonos']); // visible para puntaje (no obligatorio)
+    const OPTIONAL_AMOUNT = new Set(['materiales_bonos']); // visible para puntaje
     const CAT_LABEL = {
-      almacenes:'Almacenes',
-      venta_meta:'Venta de Meta',
-      encargos_armas:'Encargos Armas',
-      crafteo_armas:'Crafteo / Compra de Armas',
-      encargos_fleccas:'Encargos / Fleccas',
-      materiales_bonos:'Materiales / Bonos',
-      encargos_quimicos:'Encargos Químicos',
+      almacenes:'Almacenes', venta_meta:'Venta de Meta', encargos_armas:'Encargos Armas',
+      crafteo_armas:'Crafteo / Compra de Armas', encargos_fleccas:'Encargos / Fleccas',
+      materiales_bonos:'Materiales / Bonos', encargos_quimicos:'Encargos Químicos',
       tiradas_meta:'Tiradas Metanfetamina'
     };
 
-    /***** LOGIN *****/
+    /***** Auth *****/
     btnLogin.onclick = async () => {
-      const uRaw = (loginUser.value || '').trim();
-      const u = uRaw.toLowerCase();
-      const p = loginPass.value || '';
-      if (!u || !p) return showToast('Completá usuario y contraseña');
-
+      const u = (loginUser.value||'').trim().toLowerCase();
+      const p = loginPass.value||'';
+      if(!u||!p) return showToast('Completá usuario y contraseña');
       const email = u.includes('@') ? u : `${u}@yy.local`;
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password: p });
-
-      if (error) {
-        const msg = (error.message || '').toLowerCase();
+      const { error } = await supabase.auth.signInWithPassword({ email, password:p });
+      if (error){
+        const msg=(error.message||'').toLowerCase();
+        if (msg.includes('invalid login credentials')) return showToast('Usuario/clave incorrectos. alias = alias@yy.local');
         if (msg.includes('not confirmed')) return showToast('Usuario no confirmado (Auth → Users → Confirm user).');
-        if (msg.includes('provider') || msg.includes('disabled')) return showToast('Provider Email desactivado (Auth → Providers → Email).');
-        if (msg.includes('invalid login credentials')) return showToast('Usuario/clave incorrectos. Recordá: alias = alias@yy.local');
-        return showToast(error.message || 'Error al iniciar sesión');
+        return showToast(error.message||'Error al iniciar sesión');
       }
-      showToast('Bienvenido'); loginPass.value = '';
+      showToast('Bienvenido'); loginPass.value='';
       await refreshSession();
     };
-
-    btnSignOut.onclick = async () => { await supabase.auth.signOut(); await refreshSession(); };
-
-    supabase.auth.onAuthStateChange((event, session) => {
-      // console.log('[AUTH EVENT]', event, session?.user?.email);
-      refreshSession();
-    });
+    btnSignOut.onclick = async ()=>{ await supabase.auth.signOut(); await refreshSession(); };
 
     async function refreshSession(){
       const { data:{ session } } = await supabase.auth.getSession();
-      const user = session?.user ?? null;
-
-      if (user){
-        const email = user.email || '';
-        const base  = email.split('@')[0] || 'usuario';
-        const nick  = (user.user_metadata?.username || base).toString();
-        const avatar = user.user_metadata?.avatar_url || null;
-
+      const user=session?.user ?? null;
+      if(user){
+        const email=user.email||''; const base=email.split('@')[0]||'usuario';
+        const nick=(user.user_metadata?.username||base).toString(); const avatar=user.user_metadata?.avatar_url||null;
         await supabase.from('profiles').upsert({ id:user.id, username:nick.toLowerCase(), avatar_url:avatar }, { onConflict:'id' });
+        whoami.textContent=`Conectado: ${nick}`; whoami.classList.remove('hidden');
+        if (avatar){ avatarImg.src=avatar; avatarImg.classList.remove('hidden'); }
+        btnSignOut.classList.remove('hidden'); authCard.classList.add('hidden'); app.classList.remove('hidden');
 
-        whoami.textContent = `Conectado: ${nick}`;
-        whoami.classList.remove('hidden');
-        if (avatar){ avatarImg.src = avatar; avatarImg.classList.remove('hidden'); }
-        btnSignOut.classList.remove('hidden');
-
-        authCard.classList.add('hidden');
-        app.classList.remove('hidden');
-
-        await Promise.allSettled([loadLogs(), bootWeekly(), initParticipantsUI()]);
-      } else {
-        authCard.classList.remove('hidden');
-        app.classList.add('hidden');
-        whoami.classList.add('hidden');
-        avatarImg.classList.add('hidden');
-        btnSignOut.classList.add('hidden');
+        // Al entrar, por defecto tab LOGS
+        activateTab('logs');
+        await Promise.allSettled([loadLogs(), initParticipantsUI(), bootWeekly()]);
+      }else{
+        authCard.classList.remove('hidden'); app.classList.add('hidden');
+        whoami.classList.add('hidden'); avatarImg.classList.add('hidden'); btnSignOut.classList.add('hidden');
       }
     }
     refreshSession();
 
-    /***** PARTICIPANTES (chips + autocomplete + persistir) *****/
+    /***** Tabs *****/
+    function activateTab(which){
+      const logsActive = which==='logs';
+      tabLogs.classList.toggle('active', logsActive);
+      tabSummaries.classList.toggle('active', !logsActive);
+      panelLogs.classList.toggle('hidden', !logsActive);
+      panelSummaries.classList.toggle('hidden', logsActive);
+      if(!logsActive){ bootWeekly(); } else { loadLogs(); }
+    }
+    tabLogs.onclick = ()=>activateTab('logs');
+    tabSummaries.onclick = ()=>activateTab('summaries');
+
+    /***** Participantes (chips + autocomplete + persistir) *****/
     const selectedParts=new Set(); let directory=[];
     const norm=s=>s.trim().replace(/\s+/g,' '); const esc=s=>(s||'').replaceAll('<','&lt;').replaceAll('>','&gt;');
 
@@ -394,7 +341,6 @@
       chip.querySelector('button').onclick=()=>{selectedParts.delete(n);chip.remove();};
       chipsBox.appendChild(chip);
     }
-
     function renderSuggestions(q=''){
       const needle=q.toLowerCase(); const base=directory.filter(n=>!selectedParts.has(n));
       const items=needle?base.filter(n=>n.toLowerCase().includes(needle)):base; const top=items.slice(0,8);
@@ -411,16 +357,13 @@
         };
       });
     }
-
     async function createParticipant(name){
       const { data:{ session } } = await supabase.auth.getSession();
       const user=session?.user ?? null; if(!user){showToast('No autenticado');return;}
-      const n=norm(name);
-      const { error } = await supabase.from('participants').insert({ name:n, created_by:user.id });
+      const n=norm(name); const { error } = await supabase.from('participants').insert({ name:n, created_by:user.id });
       if (error && !/duplicate/i.test(error.message)) { showToast(error.message); return; }
       if (!directory.includes(n)) directory.push(n);
     }
-
     async function loadDirectory(){
       const [{ data: p1 }, { data: p2 }] = await Promise.all([
         supabase.from('profiles').select('username'),
@@ -429,150 +372,103 @@
       const set=new Set(); (p1||[]).forEach(r=>r.username&&set.add(r.username)); (p2||[]).forEach(r=>r.name&&set.add(r.name));
       directory=Array.from(set).sort((a,b)=>a.localeCompare(b));
     }
-
     async function ensureParticipantsSaved(parts){
-      const have = new Set(directory.map(n=>n.toLowerCase()));
-      const missing = parts.filter(n => !have.has(n.toLowerCase()));
-      if (!missing.length) return;
+      const have=new Set(directory.map(n=>n.toLowerCase()));
+      const missing=parts.filter(n=>!have.has(n.toLowerCase()));
+      if(!missing.length) return;
       const { data:{ session } } = await supabase.auth.getSession();
-      const user = session?.user ?? null; if (!user) return;
-      const rows = missing.map(n => ({ name:n, created_by:user.id }));
+      const user=session?.user ?? null; if(!user) return;
+      const rows=missing.map(n=>({ name:n, created_by:user.id }));
       const { error } = await supabase.from('participants').upsert(rows, { onConflict:'name' });
-      if (!error){ missing.forEach(n=>{ if(!directory.includes(n)) directory.push(n); }); }
+      if(!error){ missing.forEach(n=>{ if(!directory.includes(n)) directory.push(n); }); }
     }
-
     participantsInput.addEventListener('input', e=>renderSuggestions(e.target.value));
     participantsInput.addEventListener('focus', ()=>renderSuggestions(participantsInput.value));
     document.addEventListener('click', e=>{ if(!suggestBox.contains(e.target) && e.target!==participantsInput) suggestBox.classList.add('hidden'); });
     participantsInput.addEventListener('keydown', e=>{
       if(e.key==='Enter'||e.key===','){ e.preventDefault(); const val=norm(participantsInput.value); if(val) addChip(val); participantsInput.value=''; suggestBox.classList.add('hidden'); }
     });
-
     async function initParticipantsUI(){ selectedParts.clear(); chipsBox.innerHTML=''; await loadDirectory(); renderSuggestions(''); }
 
-    /***** FORM LOG *****/
+    /***** Form Log *****/
     function updateAmountVisibility(){
-      const cat = category.value;
-      const need = REQUIRES_AMOUNT.has(cat);
-      const opt  = OPTIONAL_AMOUNT.has(cat);
-      amountWrap.classList.toggle('hidden', !(need || opt));
-
-      if (need || opt){
-        if (cat === 'venta_meta'){
-          amountLabel.textContent = 'Monto (USD)';
-          amount.placeholder = 'Ej: 25000 (USD)';
-          amountHint.textContent = 'Ingresá el monto en dólares (USD)';
-        } else if (cat === 'materiales_bonos'){
-          amountLabel.textContent = 'Monto (Materiales/Bonos)';
-          amount.placeholder = 'Ej: 1500';
-          amountHint.textContent = '(Opcional) Se usa para el puntaje: total / 1000';
-        } else if (cat === 'crafteo_armas'){
-          amountLabel.textContent = 'Cantidad (unidades)';
-          amount.placeholder = 'Ej: 10';
-          amountHint.textContent = 'Se usa también para el puntaje: total / 10';
-        } else if (cat === 'tiradas_meta'){
-          amountLabel.textContent = 'Cantidad (tiradas)';
-          amount.placeholder = 'Ej: 3';
-          amountHint.textContent = 'En puntaje vale 1 por acción (no por cantidad)';
-        } else {
-          amountLabel.textContent = 'Cantidad (número)';
-          amount.placeholder = 'Ej: 25';
-          amountHint.textContent = 'Ingresá la cantidad';
-        }
+      const cat=category.value; const need=REQUIRES_AMOUNT.has(cat); const opt=OPTIONAL_AMOUNT.has(cat);
+      amountWrap.classList.toggle('hidden', !(need||opt));
+      if(need||opt){
+        if(cat==='venta_meta'){ amountLabel.textContent='Monto (USD)'; amount.placeholder='Ej: 25000 (USD)'; amountHint.textContent='Ingresá el monto en dólares (USD)'; }
+        else if(cat==='materiales_bonos'){ amountLabel.textContent='Monto (Materiales/Bonos)'; amount.placeholder='Ej: 1500'; amountHint.textContent='(Opcional) Para puntaje: total / 1000'; }
+        else if(cat==='crafteo_armas'){ amountLabel.textContent='Cantidad (unidades)'; amount.placeholder='Ej: 10'; amountHint.textContent='Se usa también en puntaje: total / 10'; }
+        else if(cat==='tiradas_meta'){ amountLabel.textContent='Cantidad (tiradas)'; amount.placeholder='Ej: 3'; amountHint.textContent='En puntaje vale 1 por acción'; }
+        else { amountLabel.textContent='Cantidad (número)'; amount.placeholder='Ej: 25'; amountHint.textContent='Ingresá la cantidad'; }
         amountHint.classList.remove('hidden');
-      }else{
-        amountHint.classList.add('hidden');
-      }
+      } else { amountHint.classList.add('hidden'); }
     }
     category.addEventListener('change', updateAmountVisibility); updateAmountVisibility();
 
     btnSubmit.onclick = async ()=>{
-      const parts=Array.from(selectedParts);
-      if(parts.length===0) return showToast('Agrega al menos un participante');
+      const parts=Array.from(selectedParts); if(parts.length===0) return showToast('Agrega al menos un participante');
+      const { data:{ session } } = await supabase.auth.getSession(); const user=session?.user ?? null;
+      if(!user) return showToast('No autenticado');
 
-      const { data:{ session } } = await supabase.auth.getSession();
-      const user=session?.user ?? null; if(!user) return showToast('No autenticado');
-
-      const cat=category.value; const need=REQUIRES_AMOUNT.has(cat);
+      const cat=category.value; const need=REQUIRES_AMOUNT.has(cat); const opt=OPTIONAL_AMOUNT.has(cat);
       const amt=amount.value ? Number(amount.value) : null;
-      if (need && !(amt>=0)) return showToast('La cantidad/monto es obligatorio');
+      if(need && !(amt>=0)) return showToast('La cantidad/monto es obligatorio');
 
       await ensureParticipantsSaved(parts);
-
-      const payload={ user_id:user.id, participants:parts, category:cat, amount: (need || OPTIONAL_AMOUNT.has(cat)) ? (amt ?? null) : (need ? amt : null), notes:notes.value||null };
+      const payload={ user_id:user.id, participants:parts, category:cat, amount:(need||opt)?(amt??null):(need?amt:null), notes:notes.value||null };
       const { error } = await supabase.from('logs').insert(payload);
-      if (error) return showToast(error.message);
+      if(error) return showToast(error.message);
 
-      selectedParts.clear(); chipsBox.innerHTML=''; participantsInput.value='';
-      amount.value=''; notes.value='';
-      showToast('Log guardado'); await loadLogs(); bootWeekly(); await loadDirectory();
+      selectedParts.clear(); chipsBox.innerHTML=''; participantsInput.value=''; amount.value=''; notes.value='';
+      showToast('Log guardado'); await loadLogs(); await loadDirectory(); bootWeekly();
     };
 
-    /***** LISTADO *****/
+    /***** Listado *****/
     async function loadLogs(){
-      let { data: logs, error } = await supabase
-        .from('logs')
+      let { data: logs, error } = await supabase.from('logs')
         .select('id,created_at,user_id,participants,category,amount,notes')
-        .order('created_at',{ascending:false})
-        .limit(200);
-      if (error){ showToast(error.message||'Error al cargar logs'); return; }
-      if (filterCat.value) logs = (logs||[]).filter(r=>r.category===filterCat.value);
+        .order('created_at',{ascending:false}).limit(200);
+      if(error){ showToast(error.message||'Error al cargar logs'); return; }
+      if(filterCat.value) logs=(logs||[]).filter(r=>r.category===filterCat.value);
 
-      const ids = Array.from(new Set((logs||[]).map(r=>r.user_id))).filter(Boolean);
-      let pmap = {};
-      if (ids.length){
+      const ids=Array.from(new Set((logs||[]).map(r=>r.user_id))).filter(Boolean);
+      let pmap={}; if(ids.length){
         const { data: profs } = await supabase.from('profiles').select('id,username,avatar_url').in('id', ids);
-        pmap = Object.fromEntries((profs||[]).map(p=>[p.id,{username:p.username,avatar_url:p.avatar_url}]));
+        pmap=Object.fromEntries((profs||[]).map(p=>[p.id,{username:p.username,avatar_url:p.avatar_url}]));
       }
       renderTable(logs||[], pmap);
     }
-
     function renderTable(rows, pmap){
       const esc = s => (s||'').replaceAll('<','&lt;').replaceAll('>','&gt;');
-      logsTable.innerHTML = rows.map(r=>{
-        const date = new Date(r.created_at).toLocaleString();
-        const prof = pmap?.[r.user_id] || {};
-        const who  = prof.username || '—';
-        const ava  = prof.avatar_url ? `<img class="avatar" src="${prof.avatar_url}" alt="">` : '';
-        const parts= (r.participants||[]).join(', ');
-        const amt  = (r.amount ?? '') === '' ? '—' : r.amount;
-        const cat  = (CAT_LABEL[r.category] || r.category).replace('_',' ');
-        return `<tr>
-          <td>${date}</td>
-          <td>${ava}${esc(who)}</td>
-          <td><span class="tag">${esc(cat)}</span></td>
-          <td>${esc(parts)}</td>
-          <td>${amt}</td>
-          <td>${esc(r.notes||'')}</td>
-        </tr>`;
+      logsTable.innerHTML=(rows).map(r=>{
+        const date=new Date(r.created_at).toLocaleString();
+        const prof=pmap?.[r.user_id]||{}; const who=prof.username||'—';
+        const ava=prof.avatar_url?`<img class="avatar" src="${prof.avatar_url}" alt="">`:''; const parts=(r.participants||[]).join(', ');
+        const amt=(r.amount??'')===''?'—':r.amount; const cat=(CAT_LABEL[r.category]||r.category).replace('_',' ');
+        return `<tr><td>${date}</td><td>${ava}${esc(who)}</td><td><span class="tag">${esc(cat)}</span></td><td>${esc(parts)}</td><td>${amt}</td><td>${esc(r.notes||'')}</td></tr>`;
       }).join('');
     }
     btnReload.onclick=loadLogs; filterCat.onchange=loadLogs;
-
-    btnCSV.onclick = async ()=>{
+    btnCSV.onclick=async()=>{
       const { data, error } = await supabase.from('logs')
         .select('created_at,category,participants,amount,notes,user_id')
-        .order('created_at',{ascending:false})
-        .limit(2000);
-      if (error) return showToast(error.message);
+        .order('created_at',{ascending:false}).limit(2000);
+      if(error) return showToast(error.message);
       const header=["created_at","category","participants","amount","notes","user_id"];
       const csv=[header.join(",")].concat((data||[]).map(r=>[
-        r.created_at,r.category,`"${(r.participants||[]).join(' | ')}"`,r.amount ?? "",`"${(r.notes||"").replaceAll('"','""')}"`,r.user_id
+        r.created_at,r.category,`"${(r.participants||[]).join(' | ')}"`,r.amount??"",`"${(r.notes||"").replaceAll('"','""')}"`,r.user_id
       ].join(","))).join("\n");
       const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const url=URL.createObjectURL(blob);
       const a=Object.assign(document.createElement('a'),{href:url,download:'logs.csv'}); document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
     };
 
-    /***** RESUMEN SEMANAL (general + por participante) *****/
+    /***** Resúmenes (general + por participante) *****/
     function getWeekStart(date=new Date()){ const d=new Date(date); const day=d.getDay(); const diff=(day===0?-6:1-day); d.setHours(0,0,0,0); d.setDate(d.getDate()+diff); return d; }
     function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
     function toISODate(d){ return d.toISOString(); }
-    function setWeekInputFromDate(d){
-      const tgt=getWeekStart(d); const year=new Intl.DateTimeFormat('en-CA',{year:'numeric'}).format(tgt);
+    function setWeekInputFromDate(d){ const tgt=getWeekStart(d); const year=new Intl.DateTimeFormat('en-CA',{year:'numeric'}).format(tgt);
       const temp=new Date(Date.UTC(tgt.getFullYear(),0,4)); const week1=getWeekStart(temp);
-      const diff=(tgt-week1)/(1000*60*60*24*7)+1; const weekNo=String(Math.round(diff)).padStart(2,'0');
-      weekInput.value=`${year}-W${weekNo}`;
-    }
+      const diff=(tgt-week1)/(1000*60*60*24*7)+1; const weekNo=String(Math.round(diff)).padStart(2,'0'); weekInput.value=`${year}-W${weekNo}`; }
     function getWeekRangeFromInput(){
       if(!weekInput.value){ const start=getWeekStart(new Date()); return { start, end:addDays(start,7) }; }
       const [y,w]=weekInput.value.split('-W').map(Number); const jan4=new Date(Date.UTC(y,0,4)); const weekStart=getWeekStart(jan4);
@@ -583,15 +479,13 @@
       const { start, end } = getWeekRangeFromInput();
       const { data, error } = await supabase.from('logs')
         .select('category,amount,created_at')
-        .gte('created_at', toISODate(start))
-        .lt('created_at',  toISODate(end));
-      if (error){ showToast(error.message||'Error en resumen'); return; }
+        .gte('created_at', toISODate(start)).lt('created_at', toISODate(end));
+      if(error){ showToast(error.message||'Error en resumen'); return; }
       const summary={}; for(const cat of Object.keys(CAT_LABEL)) summary[cat]={count:0,amountSum:0};
-      for(const r of (data||[])){ const c=r.category; if(REQUIRES_AMOUNT.has(c)) summary[c].amountSum += Number(r.amount||0); else summary[c].count += 1; }
-      weeklyGrid.innerHTML = Object.entries(summary).map(([cat, vals])=>{
+      for(const r of (data||[])){ const c=r.category; if(REQUIRES_AMOUNT.has(c)) summary[c].amountSum+=Number(r.amount||0); else summary[c].count+=1; }
+      weeklyGrid.innerHTML=Object.entries(summary).map(([cat,vals])=>{
         const label=CAT_LABEL[cat]||cat; const requires=REQUIRES_AMOUNT.has(cat);
-        const value=requires ? (vals.amountSum||0) : (vals.count||0);
-        const sub=requires ? 'Total semanal' : 'Acciones esta semana';
+        const value=requires?(vals.amountSum||0):(vals.count||0); const sub=requires?'Total semanal':'Acciones esta semana';
         return `<div class="kpi"><div class="kpi-label">${label}</div><div class="kpi-value">${value}</div><div class="kpi-sub">${sub}</div></div>`;
       }).join('');
     }
@@ -600,94 +494,62 @@
       const { start, end } = getWeekRangeFromInput();
       const { data, error } = await supabase.from('logs')
         .select('category,amount,participants,created_at')
-        .gte('created_at', toISODate(start))
-        .lt('created_at',  toISODate(end));
-      if (error){ showToast(error.message||'Error en resumen por participante'); return; }
+        .gte('created_at', toISODate(start)).lt('created_at', toISODate(end));
+      if(error){ showToast(error.message||'Error en resumen por participante'); return; }
 
-      // estructura: por participante guardo count y amount por categoría
-      const cats = Object.keys(CAT_LABEL);
-      const blank = () => Object.fromEntries(cats.map(c=>[c,{count:0,amount:0}]));
-      const stats = {};  // nombre -> { cats:{cat:{count,amount}}, score:number }
+      const cats=Object.keys(CAT_LABEL);
+      const blank=()=>Object.fromEntries(cats.map(c=>[c,{count:0,amount:0}]));
+      const stats={}; // name -> {cats, score}
 
       for(const r of (data||[])){
-        const parts = r.participants || [];
+        const parts=r.participants||[];
         for(const raw of parts){
-          const name = (raw||'').trim();
-          if(!name) continue;
-          if(!stats[name]) stats[name] = { cats: blank(), score:0 };
-          const c = r.category;
+          const name=(raw||'').trim(); if(!name) continue;
+          if(!stats[name]) stats[name]={cats:blank(),score:0};
+          const c=r.category;
           stats[name].cats[c].count += 1;
-          stats[name].cats[c].amount += Number(r.amount || 0);
+          stats[name].cats[c].amount += Number(r.amount||0);
         }
       }
 
-      // puntaje
-      const rows = Object.entries(stats).map(([name, obj])=>{
-        const C = obj.cats;
-        const score =
-          (C.venta_meta.amount       / 20000) +
-          (C.materiales_bonos.amount / 1000)  +
-          (C.crafteo_armas.amount    / 10)    +
-          (C.almacenes.count) +
-          (C.encargos_armas.count) +
-          (C.encargos_quimicos.count) +
-          (C.tiradas_meta.count) +
-          (C.encargos_fleccas.count);
-
+      const rows=Object.entries(stats).map(([name,obj])=>{
+        const C=obj.cats;
+        const score=(C.venta_meta.amount/20000)+(C.materiales_bonos.amount/1000)+(C.crafteo_armas.amount/10)
+                    +C.almacenes.count+C.encargos_armas.count+C.encargos_quimicos.count+C.tiradas_meta.count+C.encargos_fleccas.count;
         return {
           name,
-          venta_total:       C.venta_meta.amount,
-          materiales_total:  C.materiales_bonos.amount, // solo para puntaje
-          crafteo_total:     C.crafteo_armas.amount,
-          almacenes:         C.almacenes.count,
-          enc_armas:         C.encargos_armas.count,
-          enc_quimicos:      C.encargos_quimicos.count,
-          tiradas:           C.tiradas_meta.count,
-          enc_fleccas:       C.encargos_fleccas.count,
-          score:             Number(score.toFixed(2))
+          venta_total:C.venta_meta.amount, materiales_total:C.materiales_bonos.amount, crafteo_total:C.crafteo_armas.amount,
+          almacenes:C.almacenes.count, enc_armas:C.encargos_armas.count, enc_quimicos:C.encargos_quimicos.count, tiradas:C.tiradas_meta.count, enc_fleccas:C.encargos_fleccas.count,
+          score:Number(score.toFixed(2))
         };
-      }).sort((a,b)=>b.score - a.score);
+      }).sort((a,b)=>b.score-a.score);
 
-      // render
-      weeklyUserTableBody.innerHTML = rows.map(r=>`
+      weeklyUserTableBody.innerHTML=rows.map(r=>`
         <tr>
-          <td>${esc(r.name)}</td>
-          <td>${r.venta_total}</td>
-          <td>${r.materiales_total}</td>
-          <td>${r.crafteo_total}</td>
-          <td>${r.almacenes}</td>
-          <td>${r.enc_armas}</td>
-          <td>${r.enc_quimicos}</td>
-          <td>${r.tiradas}</td>
-          <td>${r.enc_fleccas}</td>
+          <td>${esc(r.name)}</td><td>${r.venta_total}</td><td>${r.materiales_total}</td><td>${r.crafteo_total}</td>
+          <td>${r.almacenes}</td><td>${r.enc_armas}</td><td>${r.enc_quimicos}</td><td>${r.tiradas}</td><td>${r.enc_fleccas}</td>
           <td><strong>${r.score}</strong></td>
-        </tr>
-      `).join('');
+        </tr>`).join('');
 
-      // export handler (reconstruyo CSV con las filas mostradas)
-      btnExportWeeklyUsersCSV.onclick = () => {
-        const header = ['participante','venta_total','materiales_total','crafteo_total','almacenes','encargos_armas','encargos_quimicos','tiradas','encargos_fleccas','puntaje'];
-        const csv = [header.join(',')]
-          .concat(rows.map(r=>[
-            `"${r.name.replaceAll('"','""')}"`,
-            r.venta_total, r.materiales_total, r.crafteo_total,
-            r.almacenes, r.enc_armas, r.enc_quimicos, r.tiradas, r.enc_fleccas,
-            r.score
-          ].join(',')))
-          .join('\n');
-        const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-        const url  = URL.createObjectURL(blob);
-        const a = Object.assign(document.createElement('a'), { href:url, download:`resumen_participantes_${new Date().toISOString().slice(0,10)}.csv` });
+      btnExportWeeklyUsersCSV.onclick=()=>{
+        const header=['participante','venta_total','materiales_total','crafteo_total','almacenes','encargos_armas','encargos_quimicos','tiradas','encargos_fleccas','puntaje'];
+        const csv=[header.join(',')].concat(rows.map(r=>[
+          `"${r.name.replaceAll('"','""')}"`,r.venta_total,r.materiales_total,r.crafteo_total,r.almacenes,r.enc_armas,r.enc_quimicos,r.tiradas,r.enc_fleccas,r.score
+        ].join(','))).join('\n');
+        const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const url=URL.createObjectURL(blob);
+        const a=Object.assign(document.createElement('a'),{href:url,download:`resumen_participantes_${new Date().toISOString().slice(0,10)}.csv`});
         document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
       };
     }
 
-    // Navegación semanas
+    // Navegación semanas (solo afecta panel Resúmenes)
+    function setWeekInputFromDate(d){ const tgt=getWeekStart(d); const year=new Intl.DateTimeFormat('en-CA',{year:'numeric'}).format(tgt);
+      const temp=new Date(Date.UTC(tgt.getFullYear(),0,4)); const week1=getWeekStart(temp);
+      const diff=(tgt-week1)/(1000*60*60*24*7)+1; const weekNo=String(Math.round(diff)).padStart(2,'0'); weekInput.value=`${year}-W${weekNo}`; }
     btnThisWeek.onclick=()=>{ setWeekInputFromDate(new Date()); loadWeeklySummary(); loadWeeklyByParticipant(); };
     btnPrevWeek.onclick=()=>{ const r=getWeekRangeFromInput(); setWeekInputFromDate(addDays(r.start,-7)); loadWeeklySummary(); loadWeeklyByParticipant(); };
     btnNextWeek.onclick=()=>{ const r=getWeekRangeFromInput(); setWeekInputFromDate(addDays(r.start,7));  loadWeeklySummary(); loadWeeklyByParticipant(); };
     weekInput.onchange=()=>{ loadWeeklySummary(); loadWeeklyByParticipant(); };
-
     btnExportWeeklyCSV.onclick=async()=>{
       const { start, end }=getWeekRangeFromInput();
       const { data, error }=await supabase.from('logs')
@@ -696,7 +558,7 @@
       if(error){ showToast(error.message); return; }
       const header=["created_at","category","participants","amount","notes","user_id"];
       const csv=[header.join(",")].concat((data||[]).map(r=>[
-        r.created_at,r.category,`"${(r.participants||[]).join(' | ')}"`,r.amount ?? "",`"${(r.notes||"").replaceAll('"','""')}"`,r.user_id
+        r.created_at,r.category,`"${(r.participants||[]).join(' | ')}"`,r.amount??"",`"${(r.notes||"").replaceAll('"','""')}"`,r.user_id
       ].join(","))).join("\n");
       const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const url=URL.createObjectURL(blob);
       const a=Object.assign(document.createElement('a'),{href:url,download:`logs_semana_${new Date().toISOString().slice(0,10)}.csv`});
