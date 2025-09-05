@@ -225,10 +225,38 @@
     const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4b2h4cGpleW1vZW5xbnZtcWtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcwNDQ1MjcsImV4cCI6MjA3MjYyMDUyN30.lIDbq0OzEghpqtXCaRIbU33bcMq_l77zFAWTbrB0myE";
     const REDIRECT_TO   = location.origin + location.pathname;
 
-    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+   import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON, {
-      auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, storageKey:'yy-logs-auth' }
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        // vamos a manejar el intercambio del code nosotros (ver abajo)
+        detectSessionInUrl: false,
+        storageKey: 'yy-logs-auth'   // no cambiar esto después
+      }
     });
+    // 1) Intercambia ?code=...&state=... por una sesión y limpia la URL
+    async function handleOAuthRedirect() {
+      const url = new URL(window.location.href);
+      const hasCode  = url.searchParams.get('code');
+      const hasState = url.searchParams.get('state');
+    
+      if (hasCode && hasState) {
+        const { data, error } = await supabase.auth.exchangeCodeForSession(window.location.href);
+        if (error) {
+          console.error('exchangeCodeForSession error:', error);
+        } else {
+          // Limpia los parámetros para que no se repita el intercambio al recargar
+          window.history.replaceState({}, document.title, url.origin + url.pathname);
+        }
+      }
+    }
+    
+    // Llamar ANTES de leer la sesión
+    await handleOAuthRedirect();
+    
+
 
     // ===== CATEGORÍAS =====
     const REQUIRES_AMOUNT = new Set(['venta_meta','crafteo_armas','tiradas_meta']);
@@ -270,7 +298,8 @@
     // ===== AUTH (Discord) =====
     btnDiscord.onclick = async () => {
       const { error } = await supabase.auth.signInWithOAuth({
-        provider:'discord', options:{ redirectTo:REDIRECT_TO, scopes:'identify email' }
+        provider: 'discord',
+        options: { redirectTo: REDIRECT_TO, scopes: 'identify email' }
       });
       if (error) showToast(error.message);
     };
@@ -300,7 +329,7 @@
         whoami.classList.add('hidden'); avatarImg.classList.add('hidden'); btnSignOut.classList.add('hidden');
       }
     }
-    supabase.auth.onAuthStateChange(()=>refreshSession());
+    supabase.auth.onAuthStateChange((_event, _session) => refreshSession());
     refreshSession();
 
     // ===== PARTICIPANTES: chips + autocomplete =====
