@@ -648,7 +648,7 @@
 
       const rows=Object.entries(stats).map(([name,obj])=>{
         const C=obj.cats;
-        const score=(C.venta_meta.amount/20000)+(C.materiales_bonos.amount/1000)+(C.crafteo_armas.amount/10)
+        const score=(C.venta_meta.amount/20000)+(C.materiales_bonos.amount/1000)+(C.crafteo_armas.amount/7)
                     +C.almacenes.count+C.encargos_armas.count+C.encargos_quimicos.count+C.tiradas_meta.count+C.encargos_fleccas.count;
         return {
           name,
