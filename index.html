@@ -7,7 +7,7 @@
   <meta name="description" content="Sistema de logs Yakuza. Acceso exclusivo con Discord.">
   <style>
     :root{
-      /* Young Yakuza: lila + grises */
+      /* Yakuza: lila + grises */
       --yy-lilac:#9e8ced;      /* primario */
       --yy-lilac-dark:#7e6de0; /* tono oscuro */
       --yy-lilac-light:#b7aaf2;/* tono claro */
@@ -20,6 +20,9 @@
       --muted:#a3a7b3;
       --alert:#ef4444;
       --radius:14px;
+
+      /* Ruta del fondo (poné tu imagen aquí) */
+      --bg-image: url('bg.jpg');
     }
 
     *{box-sizing:border-box}
@@ -28,7 +31,11 @@
       margin:0;
       font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial;
       color:var(--text);
-      background:linear-gradient(180deg,var(--bg) 0%, var(--bg-2) 60%, var(--bg) 100%);
+      /* overlay lila + imagen */
+      background:
+        linear-gradient(180deg,var(--bg) 0%, var(--bg-2) 60%, var(--bg) 100%),
+        var(--bg-image) center/cover no-repeat fixed;
+      background-blend-mode: overlay;
     }
     a{color:var(--yy-lilac);text-decoration:none}
     .container{max-width:1000px;margin:0 auto;padding:24px}
@@ -73,40 +80,18 @@
 
     .toast{position:fixed;bottom:18px;right:18px;background:#121226;border:1px solid var(--bd);padding:12px 14px;border-radius:12px}
 
-    /* Grid KPI resumen */
-    .yy-grid-cards{
-      display:grid;gap:12px;
-      grid-template-columns: repeat( auto-fit, minmax(190px, 1fr) );
-    }
-    .kpi{
-      background:linear-gradient(180deg,#12121a 0%, #101018 100%);
-      border:1px solid var(--bd);
-      border-radius:var(--radius);
-      padding:14px;
-    }
+    /* Resumen semanal */
+    .yy-grid-cards{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+    .kpi{background:linear-gradient(180deg,#12121a 0%, #101018 100%);border:1px solid var(--bd);border-radius:var(--radius);padding:14px}
     .kpi .kpi-label{font-size:13px;color:var(--muted)}
-    .kpi .kpi-value{font-size:28px;font-weight:700;margin-top:4px}
+    .kpi .kpi-value{font-size:28px;font-weight:700;margin-top:4px;color:var(--yy-lilac)} /* números SIEMPRE lila */
     .kpi .kpi-sub{font-size:12px;color:var(--muted);margin-top:2px}
-    .kpi.req .kpi-value{color:var(--yy-lilac)}
 
     /* Chips participantes */
-    .chips{
-      display:flex;gap:8px;flex-wrap:wrap;
-      min-height:44px;padding:6px;border:1px solid var(--bd);
-      border-radius:10px;background:#0f0f15
-    }
-    .chip{
-      display:inline-flex;align-items:center;gap:6px;
-      padding:6px 10px;border-radius:999px;border:1px solid var(--bd);
-      background:#141424
-    }
-    .chip button{
-      background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:14px;
-    }
-    .suggestBox{
-      margin-top:6px;max-height:220px;overflow:auto;
-      background:#0f0f15;border:1px solid var(--bd);border-radius:10px
-    }
+    .chips{display:flex;gap:8px;flex-wrap:wrap;min-height:44px;padding:6px;border:1px solid var(--bd);border-radius:10px;background:#0f0f15}
+    .chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid var(--bd);background:#141424}
+    .chip button{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:14px}
+    .suggestBox{margin-top:6px;max-height:220px;overflow:auto;background:#0f0f15;border:1px solid var(--bd);border-radius:10px}
     .suggestItem{padding:8px 12px;cursor:pointer}
     .suggestItem:hover{background:#151525}
     .suggestItem.create{color:var(--yy-lilac)}
@@ -179,7 +164,7 @@
             </select>
           </div>
           <div id="amountWrap" class="hidden">
-            <label>Cantidad (número)</label>
+            <label id="amountLabel">Cantidad (número)</label>
             <input id="amount" type="number" min="0" step="1" placeholder="Ej: 25">
           </div>
           <div>
@@ -187,7 +172,7 @@
             <textarea id="notes" rows="3" placeholder="Detalles adicionales"></textarea>
           </div>
           <div class="flex">
-            <span id="amountHint" class="tag hidden">Esta categoría requiere cantidad</span>
+            <span id="amountHint" class="tag hidden"></span>
             <button id="btnSubmit" class="btn primary right">Guardar log</button>
           </div>
         </div>
@@ -267,7 +252,8 @@
     const chipsBox=document.getElementById('chipsBox'); const suggestBox=document.getElementById('suggestBox');
 
     const category=document.getElementById('category'); const amountWrap=document.getElementById('amountWrap');
-    const amount=document.getElementById('amount'); const amountHint=document.getElementById('amountHint');
+    const amount=document.getElementById('amount'); const amountLabel=document.getElementById('amountLabel');
+    const amountHint=document.getElementById('amountHint');
     const notes=document.getElementById('notes'); const btnSubmit=document.getElementById('btnSubmit');
 
     const filterCat=document.getElementById('filterCat'); const btnReload=document.getElementById('btnReload');
@@ -366,6 +352,18 @@
       directory=Array.from(set).sort((a,b)=>a.localeCompare(b));
     }
 
+    // Guarda automáticamente participantes nuevos al crear el log
+    async function ensureParticipantsSaved(parts){
+      const have = new Set(directory.map(n=>n.toLowerCase()));
+      const missing = parts.filter(n => !have.has(n.toLowerCase()));
+      if (!missing.length) return;
+      const { data:{ session } } = await supabase.auth.getSession();
+      const user = session?.user ?? null; if (!user) return;
+      const rows = missing.map(n => ({ name:n, created_by:user.id }));
+      const { error } = await supabase.from('participants').upsert(rows, { onConflict:'name' });
+      if (!error){ missing.forEach(n=>{ if(!directory.includes(n)) directory.push(n); }); }
+    }
+
     participantsInput.addEventListener('input', e=>renderSuggestions(e.target.value));
     participantsInput.addEventListener('focus', ()=>renderSuggestions(participantsInput.value));
     document.addEventListener('click', e=>{ if(!suggestBox.contains(e.target) && e.target!==participantsInput) suggestBox.classList.add('hidden'); });
@@ -376,19 +374,47 @@
     async function initParticipantsUI(){ selectedParts.clear(); chipsBox.innerHTML=''; await loadDirectory(); renderSuggestions(''); }
 
     // ===== FORM LOG =====
-    function updateAmountVisibility(){ const need=REQUIRES_AMOUNT.has(category.value); amountWrap.classList.toggle('hidden',!need); amountHint.classList.toggle('hidden',!need); }
+    function updateAmountVisibility(){
+      const cat = category.value;
+      const need = REQUIRES_AMOUNT.has(cat);
+      amountWrap.classList.toggle('hidden', !need);
+      if (need){
+        if (cat === 'venta_meta'){
+          amountLabel.textContent = 'Monto (Dolares)';
+          amount.placeholder = 'Ej: 25000 (Dolares)';
+          amountHint.textContent = 'Ingresá el monto en Dolares)';
+        }else{
+          amountLabel.textContent = 'Cantidad (número)';
+          amount.placeholder = 'Ej: 25';
+          amountHint.textContent = 'Ingresá la cantidad';
+        }
+        amountHint.classList.remove('hidden');
+      }else{
+        amountHint.classList.add('hidden');
+      }
+    }
     category.addEventListener('change', updateAmountVisibility); updateAmountVisibility();
 
     btnSubmit.onclick = async ()=>{
-      const parts=Array.from(selectedParts); if(parts.length===0) return showToast('Agrega al menos un participante');
-      const { data:{ session } } = await supabase.auth.getSession(); const user=session?.user ?? null; if(!user) return showToast('No autenticado');
+      const parts=Array.from(selectedParts);
+      if(parts.length===0) return showToast('Agrega al menos un participante');
+
+      const { data:{ session } } = await supabase.auth.getSession();
+      const user=session?.user ?? null; if(!user) return showToast('No autenticado');
+
       const cat=category.value; const need=REQUIRES_AMOUNT.has(cat);
-      const amt=amount.value ? Number(amount.value) : null; if(need && !(amt>=0)) return showToast('La cantidad es obligatoria');
+      const amt=amount.value ? Number(amount.value) : null;
+      if (need && !(amt>=0)) return showToast('La cantidad/monto es obligatorio');
+
+      // asegura que queden guardados para futuras sugerencias
+      await ensureParticipantsSaved(parts);
 
       const payload={ user_id:user.id, participants:parts, category:cat, amount:need?amt:null, notes:notes.value||null };
-      const { error } = await supabase.from('logs').insert(payload); if(error) return showToast(error.message);
+      const { error } = await supabase.from('logs').insert(payload);
+      if (error) return showToast(error.message);
 
-      selectedParts.clear(); chipsBox.innerHTML=''; participantsInput.value=''; amount.value=''; notes.value='';
+      selectedParts.clear(); chipsBox.innerHTML=''; participantsInput.value='';
+      amount.value=''; notes.value='';
       showToast('Log guardado'); await loadLogs(); bootWeekly(); await loadDirectory();
     };
 
@@ -396,8 +422,8 @@
     async function loadLogs(){
       let { data: logs, error } = await supabase
         .from('logs')
-        .select('id,created_at,user_id,participants,category,amount,notes')  // una línea: evita 400
-        .order('created_at', { ascending:false })
+        .select('id,created_at,user_id,participants,category,amount,notes')
+        .order('created_at',{ascending:false})
         .limit(200);
       if (error){ console.error('loadLogs error:', error); showToast(error.message||'Error al cargar logs'); return; }
       if (filterCat.value) logs = (logs||[]).filter(r=>r.category===filterCat.value);
@@ -435,7 +461,7 @@
 
     btnCSV.onclick = async ()=>{
       const { data, error } = await supabase.from('logs')
-        .select('created_at,category,participants,amount,notes,user_id')  // una línea
+        .select('created_at,category,participants,amount,notes,user_id')
         .order('created_at',{ascending:false})
         .limit(2000);
       if (error) return showToast(error.message);
@@ -443,9 +469,8 @@
       const csv=[header.join(",")].concat((data||[]).map(r=>[
         r.created_at,r.category,`"${(r.participants||[]).join(' | ')}"`,r.amount ?? "",`"${(r.notes||"").replaceAll('"','""')}"`,r.user_id
       ].join(","))).join("\n");
-      const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
-      const url=URL.createObjectURL(blob); const a=Object.assign(document.createElement('a'),{href:url,download:'logs.csv'});
-      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+      const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const url=URL.createObjectURL(blob);
+      const a=Object.assign(document.createElement('a'),{href:url,download:'logs.csv'}); document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
     };
 
     // ===== RESUMEN SEMANAL =====
@@ -466,7 +491,7 @@
     async function loadWeeklySummary(){
       const { start, end } = getWeekRangeFromInput();
       const { data, error } = await supabase.from('logs')
-        .select('category,amount,created_at')   // una línea
+        .select('category,amount,created_at')
         .gte('created_at', toISODate(start))
         .lt('created_at',  toISODate(end));
       if (error){ console.error('weekly error:', error); showToast(error.message||'Error en resumen'); return; }
@@ -475,8 +500,8 @@
       weeklyGrid.innerHTML = Object.entries(summary).map(([cat, vals])=>{
         const label=CAT_LABEL[cat]||cat; const requires=REQUIRES_AMOUNT.has(cat);
         const value=requires ? (vals.amountSum||0) : (vals.count||0);
-        const sub=requires ? 'Total semanal' : 'Acciones esta semana'; const cls=requires ? 'kpi req':'kpi';
-        return `<div class="${cls}"><div class="kpi-label">${label}</div><div class="kpi-value">${value}</div><div class="kpi-sub">${sub}</div></div>`;
+        const sub=requires ? 'Total semanal' : 'Acciones esta semana';
+        return `<div class="kpi"><div class="kpi-label">${label}</div><div class="kpi-value">${value}</div><div class="kpi-sub">${sub}</div></div>`;
       }).join('');
     }
     btnThisWeek.onclick=()=>{ setWeekInputFromDate(new Date()); loadWeeklySummary(); };
