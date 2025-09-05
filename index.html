@@ -542,29 +542,6 @@
       };
     }
 
-    // Navegación semanas (solo afecta panel Resúmenes)
-    function setWeekInputFromDate(d){ const tgt=getWeekStart(d); const year=new Intl.DateTimeFormat('en-CA',{year:'numeric'}).format(tgt);
-      const temp=new Date(Date.UTC(tgt.getFullYear(),0,4)); const week1=getWeekStart(temp);
-      const diff=(tgt-week1)/(1000*60*60*24*7)+1; const weekNo=String(Math.round(diff)).padStart(2,'0'); weekInput.value=`${year}-W${weekNo}`; }
-    btnThisWeek.onclick=()=>{ setWeekInputFromDate(new Date()); loadWeeklySummary(); loadWeeklyByParticipant(); };
-    btnPrevWeek.onclick=()=>{ const r=getWeekRangeFromInput(); setWeekInputFromDate(addDays(r.start,-7)); loadWeeklySummary(); loadWeeklyByParticipant(); };
-    btnNextWeek.onclick=()=>{ const r=getWeekRangeFromInput(); setWeekInputFromDate(addDays(r.start,7));  loadWeeklySummary(); loadWeeklyByParticipant(); };
-    weekInput.onchange=()=>{ loadWeeklySummary(); loadWeeklyByParticipant(); };
-    btnExportWeeklyCSV.onclick=async()=>{
-      const { start, end }=getWeekRangeFromInput();
-      const { data, error }=await supabase.from('logs')
-        .select('created_at,category,participants,amount,notes,user_id')
-        .gte('created_at', toISODate(start)).lt('created_at', toISODate(end));
-      if(error){ showToast(error.message); return; }
-      const header=["created_at","category","participants","amount","notes","user_id"];
-      const csv=[header.join(",")].concat((data||[]).map(r=>[
-        r.created_at,r.category,`"${(r.participants||[]).join(' | ')}"`,r.amount??"",`"${(r.notes||"").replaceAll('"','""')}"`,r.user_id
-      ].join(","))).join("\n");
-      const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const url=URL.createObjectURL(blob);
-      const a=Object.assign(document.createElement('a'),{href:url,download:`logs_semana_${new Date().toISOString().slice(0,10)}.csv`});
-      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-    };
-
     function bootWeekly(){ setWeekInputFromDate(new Date()); loadWeeklySummary(); loadWeeklyByParticipant(); }
   </script>
 </body>
