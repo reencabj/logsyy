@@ -268,7 +268,7 @@
     const toastEl=document.getElementById('toast'); function showToast(msg){ toastEl.textContent=msg; toastEl.classList.remove('hidden'); setTimeout(()=>toastEl.classList.add('hidden'),2200); }
 
     /***** Categorías *****/
-    const REQUIRES_AMOUNT = new Set(['venta_meta','crafteo_armas','tiradas_meta']);
+    const REQUIRES_AMOUNT = new Set(['venta_meta','crafteo_armas']);
     const OPTIONAL_AMOUNT = new Set(['materiales_bonos']); // visible para puntaje
     const CAT_LABEL = {
       almacenes:'Almacenes', venta_meta:'Venta de Meta', encargos_armas:'Encargos Armas',
@@ -392,17 +392,37 @@
 
     /***** Form Log *****/
     function updateAmountVisibility(){
-      const cat=category.value; const need=REQUIRES_AMOUNT.has(cat); const opt=OPTIONAL_AMOUNT.has(cat);
-      amountWrap.classList.toggle('hidden', !(need||opt));
-      if(need||opt){
-        if(cat==='venta_meta'){ amountLabel.textContent='Monto (USD)'; amount.placeholder='Ej: 25000 (USD)'; amountHint.textContent='Ingresá el monto en dólares (USD)'; }
-        else if(cat==='materiales_bonos'){ amountLabel.textContent='Monto (Materiales/Bonos)'; amount.placeholder='Ej: 1500'; amountHint.textContent='(Opcional) Para puntaje: total / 1000'; }
-        else if(cat==='crafteo_armas'){ amountLabel.textContent='Cantidad (unidades)'; amount.placeholder='Ej: 10'; amountHint.textContent='Se usa también en puntaje: total / 10'; }
-        else if(cat==='tiradas_meta'){ amountLabel.textContent='Cantidad (tiradas)'; amount.placeholder='Ej: 3'; amountHint.textContent='En puntaje vale 1 por acción'; }
-        else { amountLabel.textContent='Cantidad (número)'; amount.placeholder='Ej: 25'; amountHint.textContent='Ingresá la cantidad'; }
+      const cat = category.value;
+      const need = REQUIRES_AMOUNT.has(cat);
+      const opt  = OPTIONAL_AMOUNT?.has ? OPTIONAL_AMOUNT.has(cat) : false; // p/compat
+    
+      // Solo mostramos el campo si la categoría lo necesita o es opcional (materiales)
+      amountWrap.classList.toggle('hidden', !(need || opt));
+    
+      if (need || opt){
+        if (cat === 'venta_meta'){
+          amountLabel.textContent = 'Monto (USD)';
+          amount.placeholder = 'Ej: 25000 (USD)';
+          amountHint.textContent = 'Ingresá el monto en dólares (USD)';
+        } else if (cat === 'materiales_bonos'){
+          amountLabel.textContent = 'Monto (Materiales/Bonos)';
+          amount.placeholder = 'Ej: 1500';
+          amountHint.textContent = '(Opcional) Para puntaje: total / 1000';
+        } else if (cat === 'crafteo_armas'){
+          amountLabel.textContent = 'Cantidad (unidades)';
+          amount.placeholder = 'Ej: 10';
+          amountHint.textContent = 'Se usa también en puntaje: total / 10';
+        } else {
+          amountLabel.textContent = 'Cantidad (número)';
+          amount.placeholder = 'Ej: 25';
+          amountHint.textContent = 'Ingresá la cantidad';
+        }
         amountHint.classList.remove('hidden');
-      } else { amountHint.classList.add('hidden'); }
+      } else {
+        amountHint.classList.add('hidden');
+      }
     }
+
     category.addEventListener('change', updateAmountVisibility); updateAmountVisibility();
 
     btnSubmit.onclick = async ()=>{
