@@ -191,6 +191,153 @@
   <div id="toast" class="toast hidden"></div>
 
   <script type="module">
+        // === Config de categorías ===
+    const REQUIRES_AMOUNT = new Set(['venta_meta','crafteo_armas','tiradas_meta']);
+    const CAT_LABEL = {
+      almacenes:'Almacenes',
+      venta_meta:'Venta de Meta',
+      encargos_armas:'Encargos Armas',
+      crafteo_armas:'Crafteo / Compra de Armas',
+      encargos_fleccas:'Encargos / Fleccas',
+      materiales_bonos:'Materiales / Bonos',
+      encargos_quimicos:'Encargos Químicos',
+      tiradas_meta:'Tiradas Metanfetamina'
+    };
+    
+    // === Referencias UI resumen ===
+    const weekInput = document.getElementById('weekInput');
+    const btnPrevWeek = document.getElementById('btnPrevWeek');
+    const btnNextWeek = document.getElementById('btnNextWeek');
+    const btnThisWeek = document.getElementById('btnThisWeek');
+    const weeklyGrid = document.getElementById('weeklyGrid');
+    const btnExportWeeklyCSV = document.getElementById('btnExportWeeklyCSV');
+    
+    // === Utilidades de semana (lunes-domingo, timezone local del navegador) ===
+    function getWeekStart(date = new Date()){
+      const d = new Date(date);            // copia
+      const day = d.getDay();               // 0=Dom,1=Lun,...6=Sab
+      const diff = (day === 0 ? -6 : 1 - day); // ajustar a Lunes
+      d.setHours(0,0,0,0);
+      d.setDate(d.getDate() + diff);
+      return d;
+    }
+    function addDays(d, n){ const x = new Date(d); x.setDate(x.getDate()+n); return x; }
+    function toISODate(d){ return d.toISOString(); }
+    
+    function setWeekInputFromDate(d){
+      // input type=week usa formato YYYY-Www
+      const tgt = getWeekStart(d);
+      const year = new Intl.DateTimeFormat('en-CA',{year:'numeric'}).format(tgt);
+      // número de semana ISO
+      const temp = new Date(Date.UTC(tgt.getFullYear(),0,4));
+      const week1 = getWeekStart(temp);
+      const diff = (tgt - week1) / (1000*60*60*24*7) + 1;
+      const weekNo = String(Math.round(diff)).padStart(2,'0');
+      weekInput.value = `${year}-W${weekNo}`;
+    }
+    
+    function getWeekRangeFromInput(){
+      if (!weekInput.value){
+        const start = getWeekStart(new Date());
+        return { start, end: addDays(start,7) };
+      }
+      // valor tipo '2025-W36'
+      const [y, w] = weekInput.value.split('-W').map(Number);
+      // Algoritmo: ISO week → fecha lunes
+      const jan4 = new Date(Date.UTC(y,0,4));
+      const weekStart = getWeekStart(jan4); // lunes de la semana de 4 de enero
+      const start = new Date(weekStart); start.setUTCDate(weekStart.getUTCDate() + (w-1)*7);
+      return { start: new Date(start), end: addDays(start,7) };
+    }
+    
+    // === Cargar resumen semanal ===
+    async function loadWeeklySummary(){
+      const { start, end } = getWeekRangeFromInput();
+    
+      // Traemos SOLO columnas necesarias esta semana
+      let { data, error } = await supabase.from('logs')
+        .select('category, amount, created_at')
+        .gte('created_at', toISODate(start))
+        .lt('created_at',  toISODate(end));
+    
+      if (error){ showToast(error.message); return; }
+    
+      // Agregamos por categoría
+      const summary = {}; // {cat: {count, amountSum}}
+      for (const cat of Object.keys(CAT_LABEL)) summary[cat] = { count:0, amountSum:0 };
+    
+      for (const r of (data||[])){
+        const cat = r.category;
+        if (!summary[cat]) summary[cat] = { count:0, amountSum:0 };
+        if (REQUIRES_AMOUNT.has(cat)){
+          summary[cat].amountSum += Number(r.amount || 0);
+        }else{
+          summary[cat].count += 1;
+        }
+      }
+    
+      // Render tarjetas
+      weeklyGrid.innerHTML = Object.entries(summary).map(([cat, vals])=>{
+        const label = CAT_LABEL[cat] || cat;
+        const requires = REQUIRES_AMOUNT.has(cat);
+        const value = requires ? (vals.amountSum || 0) : (vals.count || 0);
+        const sub   = requires ? 'Total semanal' : 'Acciones esta semana';
+        const cls   = requires ? 'kpi req' : 'kpi';
+        return `
+          <div class="${cls}">
+            <div class="kpi-label">${label}</div>
+            <div class="kpi-value">${value}</div>
+            <div class="kpi-sub">${sub}</div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    // Navegación semanas
+    btnThisWeek.onclick = ()=>{ setWeekInputFromDate(new Date()); loadWeeklySummary(); };
+    btnPrevWeek.onclick = ()=>{ const r=getWeekRangeFromInput(); weekInput.value=''; setWeekInputFromDate(addDays(r.start,-7)); loadWeeklySummary(); };
+    btnNextWeek.onclick = ()=>{ const r=getWeekRangeFromInput(); weekInput.value=''; setWeekInputFromDate(addDays(r.start,7));  loadWeeklySummary(); };
+    weekInput.onchange  = loadWeeklySummary;
+    
+    // Exportar CSV del resumen
+    btnExportWeeklyCSV.onclick = async ()=>{
+      const { start, end } = getWeekRangeFromInput();
+      let { data, error } = await supabase.from('logs')
+        .select('created_at, category, participants, amount, notes, user_id')
+        .gte('created_at', toISODate(start))
+        .lt('created_at',  toISODate(end));
+      if (error){ showToast(error.message); return; }
+    
+      // Construimos CSV detallado de la semana (cada fila = un log)
+      const header = ["created_at","category","participants","amount","notes","user_id"];
+      const csv = [header.join(",")]
+        .concat((data||[]).map(r=>[
+          r.created_at,
+          r.category,
+          `"${(r.participants||[]).join(' | ')}"`,
+          r.amount ?? "",
+          `"${(r.notes||"").replaceAll('"','""')}"`,
+          r.user_id
+        ].join(",")))
+        .join("\n");
+    
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+      const url  = URL.createObjectURL(blob);
+      const a = Object.assign(document.createElement('a'), { href:url, download:`logs_semana_${new Date().toISOString().slice(0,10)}.csv` });
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    };
+    
+    // Al iniciar sesión, además de loadLogs(), llamá a:
+    function bootWeekly(){
+      setWeekInputFromDate(new Date());
+      loadWeeklySummary();
+    }
+    
+    // En tu refreshSession(), después de loadLogs():
+    // await loadLogs();
+    // bootWeekly();
+
     // 1) Configurar Supabase
     const SUPABASE_URL  = "https://dxohxpjeymoenqnvmqko.supabase.co"; // <-- reemplazar
     const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4b2h4cGpleW1vZW5xbnZtcWtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcwNDQ1MjcsImV4cCI6MjA3MjYyMDUyN30.lIDbq0OzEghpqtXCaRIbU33bcMq_l77zFAWTbrB0myE";                  // <-- reemplazar
