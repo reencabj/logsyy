@@ -220,344 +220,327 @@
   <div id="toast" class="toast hidden"></div>
 
   <script type="module">
-
-    // === OAuth/Client (único bloque) ===
-    const SITE_URL    = 'https://reencabj.github.io/logsyy/';  // TU URL EXACTA con / final
-    const REDIRECT_TO = SITE_URL;
+      /***** CONFIG *****/
+      // URL EXACTA de tu página (con "/" final)
+      const SITE_URL    = 'https://reencabj.github.io/logsyy/';
+      const REDIRECT_TO = SITE_URL;
     
-    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+      // TUS CREDENCIALES SUPABASE (Project Settings → API)
+      const SUPABASE_URL  = 'https://dxohxpjeymoenqnvmqko.supabase.co';
+      const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4b2h4cGpleW1vZW5xbnZtcWtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcwNDQ1MjcsImV4cCI6MjA3MjYyMDUyN30.lIDbq0OzEghpqtXCaRIbU33bcMq_l77zFAWTbrB0myE';
     
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: false,   // lo manejamos nosotros
-        storageKey: 'yy-logs-auth'
-      }
-    });
+      /***** CLIENTE *****/
+      import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
     
-    // Intercambio del code de Discord -> sesión + limpiar URL
-    async function handleOAuthRedirect() {
-      const url = new URL(window.location.href);
-      if (url.searchParams.get('code') && url.searchParams.get('state')) {
-        const { error } = await supabase.auth.exchangeCodeForSession(url.toString());
-        if (error) console.error('exchangeCodeForSession:', error);
-        // limpiar la URL para evitar reintentos infinitos
-        window.history.replaceState({}, document.title, SITE_URL);
-      }
-    }
-    await handleOAuthRedirect();
-    
-    // Suscripción + primer render
-    supabase.auth.onAuthStateChange((_e,_s)=>refreshSession());
-    refreshSession();
-    
-    // Botón Discord
-    btnDiscord.onclick = async () => {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'discord',
-        options: { redirectTo: REDIRECT_TO, scopes: 'identify email' }
-      });
-      if (error) showToast(error.message);
-    };
-
-    
-
-
-    // ===== CATEGORÍAS =====
-    const REQUIRES_AMOUNT = new Set(['venta_meta','crafteo_armas','tiradas_meta']);
-    const CAT_LABEL = {
-      almacenes:'Almacenes',
-      venta_meta:'Venta de Meta',
-      encargos_armas:'Encargos Armas',
-      crafteo_armas:'Crafteo / Compra de Armas',
-      encargos_fleccas:'Encargos / Fleccas',
-      materiales_bonos:'Materiales / Bonos',
-      encargos_quimicos:'Encargos Químicos',
-      tiradas_meta:'Tiradas Metanfetamina'
-    };
-
-    // ===== REFS UI =====
-    const authCard=document.getElementById('authCard'); const app=document.getElementById('app');
-    const whoami=document.getElementById('whoami'); const avatarImg=document.getElementById('avatar');
-    const btnSignOut=document.getElementById('btnSignOut'); const btnDiscord=document.getElementById('btnDiscord');
-
-    const participantsInput=document.getElementById('participantsInput');
-    const chipsBox=document.getElementById('chipsBox'); const suggestBox=document.getElementById('suggestBox');
-
-    const category=document.getElementById('category'); const amountWrap=document.getElementById('amountWrap');
-    const amount=document.getElementById('amount'); const amountLabel=document.getElementById('amountLabel');
-    const amountHint=document.getElementById('amountHint');
-    const notes=document.getElementById('notes'); const btnSubmit=document.getElementById('btnSubmit');
-
-    const filterCat=document.getElementById('filterCat'); const btnReload=document.getElementById('btnReload');
-    const btnCSV=document.getElementById('btnCSV'); const logsTable=document.querySelector('#logsTable tbody');
-
-    // Resumen semanal
-    const weekInput=document.getElementById('weekInput'); const btnPrevWeek=document.getElementById('btnPrevWeek');
-    const btnNextWeek=document.getElementById('btnNextWeek'); const btnThisWeek=document.getElementById('btnThisWeek');
-    const weeklyGrid=document.getElementById('weeklyGrid'); const btnExportWeeklyCSV=document.getElementById('btnExportWeeklyCSV');
-
-    const toastEl=document.getElementById('toast');
-    function showToast(msg){ toastEl.textContent=msg; toastEl.classList.remove('hidden'); setTimeout(()=>toastEl.classList.add('hidden'),2200); }
-
-    // ===== AUTH (Discord) =====
-    btnDiscord.onclick = async () => {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'discord',
-        options: { redirectTo: REDIRECT_TO, scopes: 'identify email' }
-      });
-      if (error) showToast(error.message);
-    };
-    btnSignOut.onclick = async () => { await supabase.auth.signOut(); refreshSession(); };
-
-    async function ensureProfile(user){
-      const m=user.user_metadata||{};
-      const nick=(m.global_name||m.full_name||m.name||m.user_name||'usuario').toString();
-      const avatar=m.avatar_url||m.picture||null;
-      const { error } = await supabase.from('profiles')
-        .upsert({ id:user.id, username:nick.toLowerCase(), avatar_url:avatar }, { onConflict:'id' });
-      if (error) console.warn('profiles upsert error', error);
-      return { nick, avatar };
-    }
-
-    async function refreshSession(){
-      const { data:{ session } } = await supabase.auth.getSession();
-      const user = session?.user ?? null;
-      if (user){
-        const { nick, avatar } = await ensureProfile(user);
-        whoami.textContent=`Conectado: ${nick}`; whoami.classList.remove('hidden');
-        if (avatar){ avatarImg.src=avatar; avatarImg.classList.remove('hidden'); }
-        btnSignOut.classList.remove('hidden'); authCard.classList.add('hidden'); app.classList.remove('hidden');
-        await Promise.all([loadLogs(), bootWeekly(), initParticipantsUI()]);
-      }else{
-        authCard.classList.remove('hidden'); app.classList.add('hidden');
-        whoami.classList.add('hidden'); avatarImg.classList.add('hidden'); btnSignOut.classList.add('hidden');
-      }
-    }
-    supabase.auth.onAuthStateChange((_event, _session) => refreshSession());
-    refreshSession();
-
-    // ===== PARTICIPANTES: chips + autocomplete =====
-    const selectedParts=new Set(); let directory=[]; // perfiles.username + participants.name
-    const norm=s=>s.trim().replace(/\s+/g,' '); const esc=s=>(s||'').replaceAll('<','&lt;').replaceAll('>','&gt;');
-
-    function addChip(name){
-      const n=norm(name); if(!n||selectedParts.has(n)) return;
-      selectedParts.add(n);
-      const chip=document.createElement('span');
-      chip.className='chip'; chip.dataset.name=n;
-      chip.innerHTML=`${esc(n)} <button title="Quitar">×</button>`;
-      chip.querySelector('button').onclick=()=>{selectedParts.delete(n);chip.remove();};
-      chipsBox.appendChild(chip);
-    }
-
-    function renderSuggestions(q=''){
-      const needle=q.toLowerCase(); const base=directory.filter(n=>!selectedParts.has(n));
-      const items=needle?base.filter(n=>n.toLowerCase().includes(needle)):base; const top=items.slice(0,8);
-      let html=top.map(n=>`<div class="suggestItem">${esc(n)}</div>`).join('');
-      const exists=directory.some(n=>n.toLowerCase()===needle);
-      if(q && !exists) html+=`<div class="suggestItem create">Crear “${esc(q)}”</div>`;
-      suggestBox.innerHTML=html || `<div class="suggestItem muted">Sin resultados</div>`;
-      suggestBox.classList.toggle('hidden', false);
-      [...suggestBox.querySelectorAll('.suggestItem')].forEach(it=>{
-        it.onclick=async()=>{
-          const text=it.classList.contains('create')?q:it.textContent;
-          if(it.classList.contains('create')) await createParticipant(text);
-          addChip(text); participantsInput.value=''; suggestBox.classList.add('hidden'); participantsInput.focus();
-        };
-      });
-    }
-
-    async function createParticipant(name){
-      const { data:{ session } } = await supabase.auth.getSession();
-      const user=session?.user ?? null; if(!user){showToast('No autenticado');return;}
-      const n=norm(name);
-      const { error } = await supabase.from('participants').insert({ name:n, created_by:user.id });
-      if (error && !/duplicate/i.test(error.message)) { showToast(error.message); return; }
-      if (!directory.includes(n)) directory.push(n);
-    }
-
-    async function loadDirectory(){
-      const [{ data: p1 }, { data: p2 }] = await Promise.all([
-        supabase.from('profiles').select('username'),
-        supabase.from('participants').select('name')
-      ]);
-      const set=new Set(); (p1||[]).forEach(r=>r.username&&set.add(r.username)); (p2||[]).forEach(r=>r.name&&set.add(r.name));
-      directory=Array.from(set).sort((a,b)=>a.localeCompare(b));
-    }
-
-    // Guarda automáticamente participantes nuevos al crear el log
-    async function ensureParticipantsSaved(parts){
-      const have = new Set(directory.map(n=>n.toLowerCase()));
-      const missing = parts.filter(n => !have.has(n.toLowerCase()));
-      if (!missing.length) return;
-      const { data:{ session } } = await supabase.auth.getSession();
-      const user = session?.user ?? null; if (!user) return;
-      const rows = missing.map(n => ({ name:n, created_by:user.id }));
-      const { error } = await supabase.from('participants').upsert(rows, { onConflict:'name' });
-      if (!error){ missing.forEach(n=>{ if(!directory.includes(n)) directory.push(n); }); }
-    }
-
-    participantsInput.addEventListener('input', e=>renderSuggestions(e.target.value));
-    participantsInput.addEventListener('focus', ()=>renderSuggestions(participantsInput.value));
-    document.addEventListener('click', e=>{ if(!suggestBox.contains(e.target) && e.target!==participantsInput) suggestBox.classList.add('hidden'); });
-    participantsInput.addEventListener('keydown', e=>{
-      if(e.key==='Enter'||e.key===','){ e.preventDefault(); const val=norm(participantsInput.value); if(val) addChip(val); participantsInput.value=''; suggestBox.classList.add('hidden'); }
-    });
-
-    async function initParticipantsUI(){ selectedParts.clear(); chipsBox.innerHTML=''; await loadDirectory(); renderSuggestions(''); }
-
-    // ===== FORM LOG =====
-    function updateAmountVisibility(){
-      const cat = category.value;
-      const need = REQUIRES_AMOUNT.has(cat);
-      amountWrap.classList.toggle('hidden', !need);
-      if (need){
-        if (cat === 'venta_meta'){
-          amountLabel.textContent = 'Monto (Dolares)';
-          amount.placeholder = 'Ej: 25000 (Dolares)';
-          amountHint.textContent = 'Ingresá el monto en Dolares)';
-        }else{
-          amountLabel.textContent = 'Cantidad (número)';
-          amount.placeholder = 'Ej: 25';
-          amountHint.textContent = 'Ingresá la cantidad';
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON, {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: false,   // lo manejamos nosotros
+          storageKey: 'yy-logs-auth'
         }
-        amountHint.classList.remove('hidden');
-      }else{
-        amountHint.classList.add('hidden');
+      });
+    
+      // Intercambia ?code&state por sesión y limpia la URL (evita loops)
+      async function handleOAuthRedirect() {
+        const url = new URL(window.location.href);
+        if (url.searchParams.get('code') && url.searchParams.get('state')) {
+          const { error } = await supabase.auth.exchangeCodeForSession(url.toString());
+          if (error) console.error('exchangeCodeForSession:', error);
+          window.history.replaceState({}, document.title, SITE_URL);
+        }
       }
-    }
-    category.addEventListener('change', updateAmountVisibility); updateAmountVisibility();
-
-    btnSubmit.onclick = async ()=>{
-      const parts=Array.from(selectedParts);
-      if(parts.length===0) return showToast('Agrega al menos un participante');
-
-      const { data:{ session } } = await supabase.auth.getSession();
-      const user=session?.user ?? null; if(!user) return showToast('No autenticado');
-
-      const cat=category.value; const need=REQUIRES_AMOUNT.has(cat);
-      const amt=amount.value ? Number(amount.value) : null;
-      if (need && !(amt>=0)) return showToast('La cantidad/monto es obligatorio');
-
-      // asegura que queden guardados para futuras sugerencias
-      await ensureParticipantsSaved(parts);
-
-      const payload={ user_id:user.id, participants:parts, category:cat, amount:need?amt:null, notes:notes.value||null };
-      const { error } = await supabase.from('logs').insert(payload);
-      if (error) return showToast(error.message);
-
-      selectedParts.clear(); chipsBox.innerHTML=''; participantsInput.value='';
-      amount.value=''; notes.value='';
-      showToast('Log guardado'); await loadLogs(); bootWeekly(); await loadDirectory();
-    };
-
-    // ===== LISTADO (join de perfiles en el cliente) =====
-    async function loadLogs(){
-      let { data: logs, error } = await supabase
-        .from('logs')
-        .select('id,created_at,user_id,participants,category,amount,notes')
-        .order('created_at',{ascending:false})
-        .limit(200);
-      if (error){ console.error('loadLogs error:', error); showToast(error.message||'Error al cargar logs'); return; }
-      if (filterCat.value) logs = (logs||[]).filter(r=>r.category===filterCat.value);
-
-      const ids = Array.from(new Set((logs||[]).map(r=>r.user_id))).filter(Boolean);
-      let pmap = {};
-      if (ids.length){
-        const { data: profs } = await supabase.from('profiles').select('id,username,avatar_url').in('id', ids);
-        pmap = Object.fromEntries((profs||[]).map(p=>[p.id,{username:p.username,avatar_url:p.avatar_url}]));
+      await handleOAuthRedirect();
+    
+      /***** REFS UI (declaradas ANTES de usarlas) *****/
+      const authCard   = document.getElementById('authCard');
+      const app        = document.getElementById('app');
+      const whoami     = document.getElementById('whoami');
+      const avatarImg  = document.getElementById('avatar');
+      const btnSignOut = document.getElementById('btnSignOut');
+      const btnDiscord = document.getElementById('btnDiscord');
+    
+      const participantsInput = document.getElementById('participantsInput');
+      const chipsBox   = document.getElementById('chipsBox');
+      const suggestBox = document.getElementById('suggestBox');
+    
+      const category   = document.getElementById('category');
+      const amountWrap = document.getElementById('amountWrap');
+      const amount     = document.getElementById('amount');
+      const amountLabel= document.getElementById('amountLabel');
+      const amountHint = document.getElementById('amountHint');
+      const notes      = document.getElementById('notes');
+      const btnSubmit  = document.getElementById('btnSubmit');
+    
+      const filterCat  = document.getElementById('filterCat');
+      const btnReload  = document.getElementById('btnReload');
+      const btnCSV     = document.getElementById('btnCSV');
+      const logsTable  = document.querySelector('#logsTable tbody');
+    
+      const weekInput  = document.getElementById('weekInput');
+      const btnPrevWeek= document.getElementById('btnPrevWeek');
+      const btnNextWeek= document.getElementById('btnNextWeek');
+      const btnThisWeek= document.getElementById('btnThisWeek');
+      const weeklyGrid = document.getElementById('weeklyGrid');
+      const btnExportWeeklyCSV = document.getElementById('btnExportWeeklyCSV');
+    
+      const toastEl    = document.getElementById('toast');
+      function showToast(msg){ toastEl.textContent=msg; toastEl.classList.remove('hidden'); setTimeout(()=>toastEl.classList.add('hidden'),2200); }
+    
+      /***** AUTH (Discord) *****/
+      btnDiscord.onclick = async () => {
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'discord',
+          options: { redirectTo: REDIRECT_TO, scopes: 'identify email' }
+        });
+        if (error) showToast(error.message);
+      };
+      btnSignOut.onclick = async () => { await supabase.auth.signOut(); refreshSession(); };
+    
+      async function ensureProfile(user){
+        const m=user.user_metadata||{};
+        const nick=(m.global_name||m.full_name||m.name||m.user_name||'usuario').toString();
+        const avatar=m.avatar_url||m.picture||null;
+        const { error } = await supabase.from('profiles')
+          .upsert({ id:user.id, username:nick.toLowerCase(), avatar_url:avatar }, { onConflict:'id' });
+        if (error) console.warn('profiles upsert error', error);
+        return { nick, avatar };
       }
-      renderTable(logs||[], pmap);
-    }
+    
+      async function refreshSession(){
+        const { data:{ session } } = await supabase.auth.getSession();
+        const user = session?.user ?? null;
+        if (user){
+          const { nick, avatar } = await ensureProfile(user);
+          whoami.textContent=`Conectado: ${nick}`;
+          whoami.classList.remove('hidden');
+          if (avatar){ avatarImg.src=avatar; avatarImg.classList.remove('hidden'); }
+          btnSignOut.classList.remove('hidden');
+          authCard.classList.add('hidden');
+          app.classList.remove('hidden');
+          await Promise.all([loadLogs(), bootWeekly(), initParticipantsUI()]);
+        }else{
+          authCard.classList.remove('hidden');
+          app.classList.add('hidden');
+          whoami.classList.add('hidden');
+          avatarImg.classList.add('hidden');
+          btnSignOut.classList.add('hidden');
+        }
+      }
+      supabase.auth.onAuthStateChange((_e,_s)=>refreshSession());
+      refreshSession();
+    
+      /***** APP (igual que tenías) *****/
+      // categorías
+      const REQUIRES_AMOUNT = new Set(['venta_meta','crafteo_armas','tiradas_meta']);
+      const CAT_LABEL = {
+        almacenes:'Almacenes', venta_meta:'Venta de Meta', encargos_armas:'Encargos Armas',
+        crafteo_armas:'Crafteo / Compra de Armas', encargos_fleccas:'Encargos / Fleccas',
+        materiales_bonos:'Materiales / Bonos', encargos_quimicos:'Encargos Químicos',
+        tiradas_meta:'Tiradas Metanfetamina'
+      };
+    
+      // participantes (chips + sugerencias)
+      const selectedParts=new Set(); let directory=[];
+      const norm=s=>s.trim().replace(/\s+/g,' '); const esc=s=>(s||'').replaceAll('<','&lt;').replaceAll('>','&gt;');
+      function addChip(name){ const n=norm(name); if(!n||selectedParts.has(n)) return; selectedParts.add(n);
+        const chip=document.createElement('span'); chip.className='chip'; chip.dataset.name=n;
+        chip.innerHTML=`${esc(n)} <button title="Quitar">×</button>`;
+        chip.querySelector('button').onclick=()=>{selectedParts.delete(n);chip.remove();};
+        chipsBox.appendChild(chip);
+      }
+      function renderSuggestions(q=''){ const needle=q.toLowerCase(); const base=directory.filter(n=>!selectedParts.has(n));
+        const items=needle?base.filter(n=>n.toLowerCase().includes(needle)):base; const top=items.slice(0,8);
+        let html=top.map(n=>`<div class="suggestItem">${esc(n)}</div>`).join('');
+        const exists=directory.some(n=>n.toLowerCase()===needle);
+        if(q && !exists) html+=`<div class="suggestItem create">Crear “${esc(q)}”</div>`;
+        suggestBox.innerHTML=html || `<div class="suggestItem muted">Sin resultados</div>`;
+        suggestBox.classList.toggle('hidden', false);
+        [...suggestBox.querySelectorAll('.suggestItem')].forEach(it=>{
+          it.onclick=async()=>{ const text=it.classList.contains('create')?q:it.textContent;
+            if(it.classList.contains('create')) await createParticipant(text);
+            addChip(text); participantsInput.value=''; suggestBox.classList.add('hidden'); participantsInput.focus();
+          };
+        });
+      }
+      async function createParticipant(name){
+        const { data:{ session } } = await supabase.auth.getSession();
+        const user=session?.user ?? null; if(!user){showToast('No autenticado');return;}
+        const n=norm(name);
+        const { error } = await supabase.from('participants').insert({ name:n, created_by:user.id });
+        if (error && !/duplicate/i.test(error.message)) { showToast(error.message); return; }
+        if (!directory.includes(n)) directory.push(n);
+      }
+      async function loadDirectory(){
+        const [{ data: p1 }, { data: p2 }] = await Promise.all([
+          supabase.from('profiles').select('username'),
+          supabase.from('participants').select('name')
+        ]);
+        const set=new Set(); (p1||[]).forEach(r=>r.username&&set.add(r.username)); (p2||[]).forEach(r=>r.name&&set.add(r.name));
+        directory=Array.from(set).sort((a,b)=>a.localeCompare(b));
+      }
+      async function ensureParticipantsSaved(parts){
+        const have = new Set(directory.map(n=>n.toLowerCase()));
+        const missing = parts.filter(n => !have.has(n.toLowerCase()));
+        if (!missing.length) return;
+        const { data:{ session } } = await supabase.auth.getSession();
+        const user = session?.user ?? null; if (!user) return;
+        const rows = missing.map(n => ({ name:n, created_by:user.id }));
+        const { error } = await supabase.from('participants').upsert(rows, { onConflict:'name' });
+        if (!error){ missing.forEach(n=>{ if(!directory.includes(n)) directory.push(n); }); }
+      }
+      participantsInput.addEventListener('input', e=>renderSuggestions(e.target.value));
+      participantsInput.addEventListener('focus', ()=>renderSuggestions(participantsInput.value));
+      document.addEventListener('click', e=>{ if(!suggestBox.contains(e.target) && e.target!==participantsInput) suggestBox.classList.add('hidden'); });
+      participantsInput.addEventListener('keydown', e=>{
+        if(e.key==='Enter'||e.key===','){ e.preventDefault(); const val=norm(participantsInput.value); if(val) addChip(val); participantsInput.value=''; suggestBox.classList.add('hidden'); }
+      });
+      async function initParticipantsUI(){ selectedParts.clear(); chipsBox.innerHTML=''; await loadDirectory(); renderSuggestions(''); }
+    
+      // formulario log
+      function updateAmountVisibility(){
+        const cat = category.value;
+        const need = REQUIRES_AMOUNT.has(cat);
+        amountWrap.classList.toggle('hidden', !need);
+        if (need){
+          if (cat === 'venta_meta'){
+            amountLabel.textContent = 'Monto (USD)';
+            amount.placeholder = 'Ej: 25000 (USD)';
+            amountHint.textContent = 'Ingresá el monto en dólares (USD)';
+          }else{
+            amountLabel.textContent = 'Cantidad (número)';
+            amount.placeholder = 'Ej: 25';
+            amountHint.textContent = 'Ingresá la cantidad';
+          }
+          amountHint.classList.remove('hidden');
+        }else{
+          amountHint.classList.add('hidden');
+        }
+      }
+      category.addEventListener('change', updateAmountVisibility); updateAmountVisibility();
+    
+      btnSubmit.onclick = async ()=>{
+        const parts=Array.from(selectedParts);
+        if(parts.length===0) return showToast('Agrega al menos un participante');
+        const { data:{ session } } = await supabase.auth.getSession();
+        const user=session?.user ?? null; if(!user) return showToast('No autenticado');
+        const cat=category.value; const need=REQUIRES_AMOUNT.has(cat);
+        const amt=amount.value ? Number(amount.value) : null;
+        if (need && !(amt>=0)) return showToast('La cantidad/monto es obligatorio');
+        await ensureParticipantsSaved(parts);
+        const payload={ user_id:user.id, participants:parts, category:cat, amount:need?amt:null, notes:notes.value||null };
+        const { error } = await supabase.from('logs').insert(payload);
+        if (error) return showToast(error.message);
+        selectedParts.clear(); chipsBox.innerHTML=''; participantsInput.value=''; amount.value=''; notes.value='';
+        showToast('Log guardado'); await loadLogs(); bootWeekly(); await loadDirectory();
+      };
+    
+      // listado
+      async function loadLogs(){
+        let { data: logs, error } = await supabase
+          .from('logs')
+          .select('id,created_at,user_id,participants,category,amount,notes')
+          .order('created_at',{ascending:false})
+          .limit(200);
+        if (error){ console.error('loadLogs error:', error); showToast(error.message||'Error al cargar logs'); return; }
+        if (filterCat.value) logs = (logs||[]).filter(r=>r.category===filterCat.value);
+        const ids = Array.from(new Set((logs||[]).map(r=>r.user_id))).filter(Boolean);
+        let pmap = {};
+        if (ids.length){
+          const { data: profs } = await supabase.from('profiles').select('id,username,avatar_url').in('id', ids);
+          pmap = Object.fromEntries((profs||[]).map(p=>[p.id,{username:p.username,avatar_url:p.avatar_url}]));
+        }
+        renderTable(logs||[], pmap);
+      }
+      function renderTable(rows, pmap){
+        const esc = s => (s||'').replaceAll('<','&lt;').replaceAll('>','&gt;');
+        logsTable.innerHTML = rows.map(r=>{
+          const date = new Date(r.created_at).toLocaleString();
+          const prof = pmap?.[r.user_id] || {};
+          const who  = prof.username || '—';
+          const ava  = prof.avatar_url ? `<img class="avatar" src="${prof.avatar_url}" alt="">` : '';
+          const parts= (r.participants||[]).join(', ');
+          const amt  = (r.amount ?? '') === '' ? '—' : r.amount;
+          const cat  = (CAT_LABEL[r.category] || r.category).replace('_',' ');
+          return `<tr>
+            <td>${date}</td>
+            <td>${ava}${esc(who)}</td>
+            <td><span class="tag">${esc(cat)}</span></td>
+            <td>${esc(parts)}</td>
+            <td>${amt}</td>
+            <td>${esc(r.notes||'')}</td>
+          </tr>`;
+        }).join('');
+      }
+      btnReload.onclick=loadLogs; filterCat.onchange=loadLogs;
+    
+      btnCSV.onclick = async ()=>{
+        const { data, error } = await supabase.from('logs')
+          .select('created_at,category,participants,amount,notes,user_id')
+          .order('created_at',{ascending:false})
+          .limit(2000);
+        if (error) return showToast(error.message);
+        const header=["created_at","category","participants","amount","notes","user_id"];
+        const csv=[header.join(",")].concat((data||[]).map(r=>[
+          r.created_at,r.category,`"${(r.participants||[]).join(' | ')}"`,r.amount ?? "",`"${(r.notes||"").replaceAll('"','""')}"`,r.user_id
+        ].join(","))).join("\n");
+        const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const url=URL.createObjectURL(blob);
+        const a=Object.assign(document.createElement('a'),{href:url,download:'logs.csv'}); document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+      };
+    
+      // resumen semanal
+      function getWeekStart(date=new Date()){ const d=new Date(date); const day=d.getDay(); const diff=(day===0?-6:1-day); d.setHours(0,0,0,0); d.setDate(d.getDate()+diff); return d; }
+      function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
+      function toISODate(d){ return d.toISOString(); }
+      function setWeekInputFromDate(d){
+        const tgt=getWeekStart(d); const year=new Intl.DateTimeFormat('en-CA',{year:'numeric'}).format(tgt);
+        const temp=new Date(Date.UTC(tgt.getFullYear(),0,4)); const week1=getWeekStart(temp);
+        const diff=(tgt-week1)/(1000*60*60*24*7)+1; const weekNo=String(Math.round(diff)).padStart(2,'0');
+        weekInput.value=`${year}-W${weekNo}`;
+      }
+      function getWeekRangeFromInput(){
+        if(!weekInput.value){ const start=getWeekStart(new Date()); return { start, end:addDays(start,7) }; }
+        const [y,w]=weekInput.value.split('-W').map(Number);
+        const jan4=new Date(Date.UTC(y,0,4)); const weekStart=getWeekStart(jan4);
+        const start=new Date(weekStart); start.setUTCDate(weekStart.getUTCDate()+(w-1)*7);
+        return { start:new Date(start), end:addDays(start,7) };
+      }
+      async function loadWeeklySummary(){
+        const { start, end } = getWeekRangeFromInput();
+        const { data, error } = await supabase.from('logs')
+          .select('category,amount,created_at')
+          .gte('created_at', toISODate(start))
+          .lt('created_at',  toISODate(end));
+        if (error){ console.error('weekly error:', error); showToast(error.message||'Error en resumen'); return; }
+        const summary={}; for(const cat of Object.keys(CAT_LABEL)) summary[cat]={count:0,amountSum:0};
+        for(const r of (data||[])){ const c=r.category; if(REQUIRES_AMOUNT.has(c)) summary[c].amountSum += Number(r.amount||0); else summary[c].count += 1; }
+        weeklyGrid.innerHTML = Object.entries(summary).map(([cat, vals])=>{
+          const label=CAT_LABEL[cat]||cat; const requires=REQUIRES_AMOUNT.has(cat);
+          const value=requires ? (vals.amountSum||0) : (vals.count||0);
+          const sub=requires ? 'Total semanal' : 'Acciones esta semana';
+          return `<div class="kpi"><div class="kpi-label">${label}</div><div class="kpi-value">${value}</div><div class="kpi-sub">${sub}</div></div>`;
+        }).join('');
+      }
+      btnThisWeek.onclick=()=>{ setWeekInputFromDate(new Date()); loadWeeklySummary(); };
+      btnPrevWeek.onclick=()=>{ const r=getWeekRangeFromInput(); setWeekInputFromDate(addDays(r.start,-7)); loadWeeklySummary(); };
+      btnNextWeek.onclick=()=>{ const r=getWeekRangeFromInput(); setWeekInputFromDate(addDays(r.start,7));  loadWeeklySummary(); };
+      weekInput.onchange=loadWeeklySummary;
+      btnExportWeeklyCSV.onclick=async()=>{
+        const { start, end }=getWeekRangeFromInput();
+        const { data, error }=await supabase.from('logs')
+          .select('created_at,category,participants,amount,notes,user_id')
+          .gte('created_at', toISODate(start)).lt('created_at', toISODate(end));
+        if(error){ showToast(error.message); return; }
+        const header=["created_at","category","participants","amount","notes","user_id"];
+        const csv=[header.join(",")].concat((data||[]).map(r=>[
+          r.created_at,r.category,`"${(r.participants||[]).join(' | ')}"`,r.amount ?? "",`"${(r.notes||"").replaceAll('"','""')}"`,r.user_id
+        ].join(","))).join("\n");
+        const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const url=URL.createObjectURL(blob);
+        const a=Object.assign(document.createElement('a'),{href:url,download:`logs_semana_${new Date().toISOString().slice(0,10)}.csv`});
+        document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+      };
+      function bootWeekly(){ setWeekInputFromDate(new Date()); loadWeeklySummary(); }
+    </script>
 
-    function renderTable(rows, pmap){
-      const esc = s => (s||'').replaceAll('<','&lt;').replaceAll('>','&gt;');
-      logsTable.innerHTML = rows.map(r=>{
-        const date = new Date(r.created_at).toLocaleString();
-        const prof = pmap?.[r.user_id] || {};
-        const who  = prof.username || '—';
-        const ava  = prof.avatar_url ? `<img class="avatar" src="${prof.avatar_url}" alt="">` : '';
-        const parts= (r.participants||[]).join(', ');
-        const amt  = (r.amount ?? '') === '' ? '—' : r.amount;
-        const cat  = (CAT_LABEL[r.category] || r.category).replace('_',' ');
-        return `<tr>
-          <td>${date}</td>
-          <td>${ava}${esc(who)}</td>
-          <td><span class="tag">${esc(cat)}</span></td>
-          <td>${esc(parts)}</td>
-          <td>${amt}</td>
-          <td>${esc(r.notes||'')}</td>
-        </tr>`;
-      }).join('');
-    }
-    btnReload.onclick=loadLogs; filterCat.onchange=loadLogs;
-
-    btnCSV.onclick = async ()=>{
-      const { data, error } = await supabase.from('logs')
-        .select('created_at,category,participants,amount,notes,user_id')
-        .order('created_at',{ascending:false})
-        .limit(2000);
-      if (error) return showToast(error.message);
-      const header=["created_at","category","participants","amount","notes","user_id"];
-      const csv=[header.join(",")].concat((data||[]).map(r=>[
-        r.created_at,r.category,`"${(r.participants||[]).join(' | ')}"`,r.amount ?? "",`"${(r.notes||"").replaceAll('"','""')}"`,r.user_id
-      ].join(","))).join("\n");
-      const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const url=URL.createObjectURL(blob);
-      const a=Object.assign(document.createElement('a'),{href:url,download:'logs.csv'}); document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-    };
-
-    // ===== RESUMEN SEMANAL =====
-    function getWeekStart(date=new Date()){ const d=new Date(date); const day=d.getDay(); const diff=(day===0?-6:1-day); d.setHours(0,0,0,0); d.setDate(d.getDate()+diff); return d; }
-    function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
-    function toISODate(d){ return d.toISOString(); }
-    function setWeekInputFromDate(d){
-      const tgt=getWeekStart(d); const year=new Intl.DateTimeFormat('en-CA',{year:'numeric'}).format(tgt);
-      const temp=new Date(Date.UTC(tgt.getFullYear(),0,4)); const week1=getWeekStart(temp);
-      const diff=(tgt-week1)/(1000*60*60*24*7)+1; const weekNo=String(Math.round(diff)).padStart(2,'0');
-      weekInput.value=`${year}-W${weekNo}`;
-    }
-    function getWeekRangeFromInput(){
-      if(!weekInput.value){ const start=getWeekStart(new Date()); return { start, end:addDays(start,7) }; }
-      const [y,w]=weekInput.value.split('-W').map(Number); const jan4=new Date(Date.UTC(y,0,4)); const weekStart=getWeekStart(jan4);
-      const start=new Date(weekStart); start.setUTCDate(weekStart.getUTCDate()+(w-1)*7); return { start:new Date(start), end:addDays(start,7) };
-    }
-    async function loadWeeklySummary(){
-      const { start, end } = getWeekRangeFromInput();
-      const { data, error } = await supabase.from('logs')
-        .select('category,amount,created_at')
-        .gte('created_at', toISODate(start))
-        .lt('created_at',  toISODate(end));
-      if (error){ console.error('weekly error:', error); showToast(error.message||'Error en resumen'); return; }
-      const summary={}; for(const cat of Object.keys(CAT_LABEL)) summary[cat]={count:0,amountSum:0};
-      for(const r of (data||[])){ const c=r.category; if(REQUIRES_AMOUNT.has(c)) summary[c].amountSum += Number(r.amount||0); else summary[c].count += 1; }
-      weeklyGrid.innerHTML = Object.entries(summary).map(([cat, vals])=>{
-        const label=CAT_LABEL[cat]||cat; const requires=REQUIRES_AMOUNT.has(cat);
-        const value=requires ? (vals.amountSum||0) : (vals.count||0);
-        const sub=requires ? 'Total semanal' : 'Acciones esta semana';
-        return `<div class="kpi"><div class="kpi-label">${label}</div><div class="kpi-value">${value}</div><div class="kpi-sub">${sub}</div></div>`;
-      }).join('');
-    }
-    btnThisWeek.onclick=()=>{ setWeekInputFromDate(new Date()); loadWeeklySummary(); };
-    btnPrevWeek.onclick=()=>{ const r=getWeekRangeFromInput(); setWeekInputFromDate(addDays(r.start,-7)); loadWeeklySummary(); };
-    btnNextWeek.onclick=()=>{ const r=getWeekRangeFromInput(); setWeekInputFromDate(addDays(r.start,7));  loadWeeklySummary(); };
-    weekInput.onchange=loadWeeklySummary;
-    btnExportWeeklyCSV.onclick=async()=>{
-      const { start, end }=getWeekRangeFromInput();
-      const { data, error }=await supabase.from('logs')
-        .select('created_at,category,participants,amount,notes,user_id')
-        .gte('created_at', toISODate(start)).lt('created_at', toISODate(end));
-      if(error){ showToast(error.message); return; }
-      const header=["created_at","category","participants","amount","notes","user_id"];
-      const csv=[header.join(",")].concat((data||[]).map(r=>[
-        r.created_at,r.category,`"${(r.participants||[]).join(' | ')}"`,r.amount ?? "",`"${(r.notes||"").replaceAll('"','""')}"`,r.user_id
-      ].join(","))).join("\n");
-      const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const url=URL.createObjectURL(blob);
-      const a=Object.assign(document.createElement('a'),{href:url,download:`logs_semana_${new Date().toISOString().slice(0,10)}.csv`});
-      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-    };
-    function bootWeekly(){ setWeekInputFromDate(new Date()); loadWeeklySummary(); }
-  </script>
 </body>
 </html>
