@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Yakuza – Logs</title>
   <meta name="description" content="Sistema de logs Yakuza. Acceso con usuario y contraseña.">
+  <!-- Favicon inline para evitar 404 -->
+  <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" ry="12" fill="%239e8ced"/><text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="36" fill="%230a0a0e">Y</text></svg>'>
   <style>
     :root{
       /* Yakuza: lila + grises */
@@ -21,7 +23,7 @@
       --alert:#ef4444;
       --radius:14px;
 
-      /* Fondo (poné tu imagen bg.jpg junto al index o cambia la ruta) */
+      /* Fondo (si ponés bg.jpg junto al index queda genial) */
       --bg-image: url('./bg.jpg');
     }
 
@@ -111,14 +113,14 @@
       </div>
     </div>
 
-    <!-- Auth card (User/Pass) -->
+    <!-- Login -->
     <div id="authCard" class="card">
       <h2>Ingresá con usuario y contraseña</h2>
-      <p class="muted">Tu usuario es el alias que te dieron (ej: <code>mikaro</code>). No se usa email real.</p>
+      <p class="muted">Podés usar <strong>email completo</strong> (recomendado) o solo alias (se mapea a <code>alias@yy.local</code>).</p>
       <div class="row grid-2">
         <div>
           <label>Usuario</label>
-          <input id="loginUser" placeholder="ej: mikaro">
+          <input id="loginUser" placeholder="ej: mikaro o mikaro@yy.local">
         </div>
         <div>
           <label>Contraseña</label>
@@ -132,7 +134,7 @@
 
     <!-- App -->
     <div id="app" class="hidden">
-      <!-- RESUMEN SEMANAL -->
+      <!-- Resumen semanal -->
       <div class="card" style="margin-top:16px">
         <div class="flex">
           <h2>Resumen semanal</h2>
@@ -150,7 +152,7 @@
         </div>
       </div>
 
-      <!-- NUEVO LOG -->
+      <!-- Nuevo log -->
       <div class="card" style="margin-top:16px">
         <h2>Nuevo log</h2>
         <div class="row">
@@ -189,7 +191,7 @@
         </div>
       </div>
 
-      <!-- LISTADO -->
+      <!-- Listado -->
       <div class="card" style="margin-top:16px">
         <div class="flex">
           <h2>Registros recientes</h2>
@@ -225,24 +227,23 @@
           </table>
         </div>
       </div>
-    </div> <!-- /#app -->
-  </div> <!-- /.container -->
+    </div>
+  </div>
 
   <div id="toast" class="toast hidden"></div>
 
   <script type="module">
     /***** CONFIG *****/
-    const SITE_URL    = 'https://reencabj.github.io/logsyy/';
-
     // TUS CREDENCIALES SUPABASE
     const SUPABASE_URL  = 'https://dxohxpjeymoenqnvmqko.supabase.co';
     const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4b2h4cGpleW1vZW5xbnZtcWtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcwNDQ1MjcsImV4cCI6MjA3MjYyMDUyN30.lIDbq0OzEghpqtXCaRIbU33bcMq_l77zFAWTbrB0myE';
 
     import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON, {
       auth: { persistSession:true, autoRefreshToken:true, detectSessionInUrl:false, storageKey:'yy-logs-auth' }
     });
+    // Para debug desde consola
+    window.sb = supabase;
 
     /***** REFS UI *****/
     const authCard   = document.getElementById('authCard');
@@ -256,96 +257,31 @@
     const btnLogin   = document.getElementById('btnLogin');
 
     const participantsInput=document.getElementById('participantsInput');
-    const chipsBox=document.getElementById('chipsBox'); const suggestBox=document.getElementById('suggestBox');
+    const chipsBox=document.getElementById('chipsBox');
+    const suggestBox=document.getElementById('suggestBox');
 
-    const category=document.getElementById('category'); const amountWrap=document.getElementById('amountWrap');
-    const amount=document.getElementById('amount'); const amountLabel=document.getElementById('amountLabel');
+    const category=document.getElementById('category');
+    const amountWrap=document.getElementById('amountWrap');
+    const amount=document.getElementById('amount');
+    const amountLabel=document.getElementById('amountLabel');
     const amountHint=document.getElementById('amountHint');
-    const notes=document.getElementById('notes'); const btnSubmit=document.getElementById('btnSubmit');
+    const notes=document.getElementById('notes');
+    const btnSubmit=document.getElementById('btnSubmit');
 
-    const filterCat=document.getElementById('filterCat'); const btnReload=document.getElementById('btnReload');
-    const btnCSV=document.getElementById('btnCSV'); const logsTable=document.querySelector('#logsTable tbody');
+    const filterCat=document.getElementById('filterCat');
+    const btnReload=document.getElementById('btnReload');
+    const btnCSV=document.getElementById('btnCSV');
+    const logsTable=document.querySelector('#logsTable tbody');
 
-    const weekInput=document.getElementById('weekInput'); const btnPrevWeek=document.getElementById('btnPrevWeek');
-    const btnNextWeek=document.getElementById('btnNextWeek'); const btnThisWeek=document.getElementById('btnThisWeek');
-    const weeklyGrid=document.getElementById('weeklyGrid'); const btnExportWeeklyCSV=document.getElementById('btnExportWeeklyCSV');
+    const weekInput=document.getElementById('weekInput');
+    const btnPrevWeek=document.getElementById('btnPrevWeek');
+    const btnNextWeek=document.getElementById('btnNextWeek');
+    const btnThisWeek=document.getElementById('btnThisWeek');
+    const weeklyGrid=document.getElementById('weeklyGrid');
+    const btnExportWeeklyCSV=document.getElementById('btnExportWeeklyCSV');
 
     const toastEl=document.getElementById('toast');
     function showToast(msg){ toastEl.textContent=msg; toastEl.classList.remove('hidden'); setTimeout(()=>toastEl.classList.add('hidden'),2200); }
-
-    /***** AUTH: Usuario + contraseña *****/
-    // Login con alias -> alias@yy.local o email completo
-    btnLogin.onclick = async () => {
-      const uRaw = (loginUser.value || '').trim();
-      const u = uRaw.toLowerCase();    // normalizo
-      const p = loginPass.value || '';
-      if (!u || !p) return showToast('Completá usuario y contraseña');
-    
-      // Si trae @ lo uso tal cual; si no, construyo alias@yy.local
-      const email = u.includes('@') ? u : `${u}@yy.local`;
-      console.log('[login] intentando con', email);
-    
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password: p });
-    
-      if (error) {
-        console.error('signInWithPassword error:', error);
-        let msg = (error.message || 'Error al iniciar sesión').toLowerCase();
-    
-        if (msg.includes('email not confirmed')) {
-          showToast('Usuario no confirmado: en Supabase → Auth → Users marcá "Confirm user" o activa "Auto-confirm".');
-        } else if (msg.includes('signups not allowed') || msg.includes('disabled') || msg.includes('provider')) {
-          showToast('Proveedor Email desactivado. Activá Auth → Providers → Email.');
-    }
-        else if (msg.includes('invalid login credentials')) {
-          showToast('Credenciales inválidas. Revisá usuario/contraseña. Recordá: alias = alias@yy.local');
-        } else {
-          showToast(error.message || 'Error al iniciar sesión');
-        }
-        return;
-      }
-    
-      showToast('Bienvenido');
-      loginPass.value = '';
-      await refreshSession();
-    };
-
-
-    btnSignOut.onclick = async () => { await supabase.auth.signOut(); await refreshSession(); };
-
-    async function refreshSession(){
-      const { data:{ session } } = await supabase.auth.getSession();
-      const user = session?.user ?? null;
-
-      if (user){
-        const email = user.email || '';
-        const base  = email.split('@')[0] || 'usuario';
-        const nick  = (user.user_metadata?.username || base).toString();
-        const avatar = user.user_metadata?.avatar_url || null;
-
-        // Guarda/actualiza perfil
-        const { error: upErr } = await supabase.from('profiles')
-          .upsert({ id:user.id, username:nick.toLowerCase(), avatar_url:avatar }, { onConflict:'id' });
-        if (upErr) console.warn('profiles upsert error', upErr);
-
-        whoami.textContent = `Conectado: ${nick}`;
-        whoami.classList.remove('hidden');
-        if (avatar){ avatarImg.src = avatar; avatarImg.classList.remove('hidden'); }
-        btnSignOut.classList.remove('hidden');
-
-        authCard.classList.add('hidden');
-        app.classList.remove('hidden');
-
-        await Promise.all([loadLogs(), bootWeekly(), initParticipantsUI()]);
-      } else {
-        authCard.classList.remove('hidden');
-        app.classList.add('hidden');
-        whoami.classList.add('hidden');
-        avatarImg.classList.add('hidden');
-        btnSignOut.classList.add('hidden');
-      }
-    }
-    supabase.auth.onAuthStateChange((_e,_s)=>refreshSession());
-    refreshSession();
 
     /***** CATEGORÍAS *****/
     const REQUIRES_AMOUNT = new Set(['venta_meta','crafteo_armas','tiradas_meta']);
@@ -359,6 +295,76 @@
       encargos_quimicos:'Encargos Químicos',
       tiradas_meta:'Tiradas Metanfetamina'
     };
+
+    /***** LOGIN *****/
+    btnLogin.onclick = async () => {
+      const uRaw = (loginUser.value || '').trim();
+      const u = uRaw.toLowerCase();
+      const p = loginPass.value || '';
+      if (!u || !p) return showToast('Completá usuario y contraseña');
+
+      // Si trae @ lo uso tal cual; si no, construyo alias@yy.local
+      const email = u.includes('@') ? u : `${u}@yy.local`;
+      console.log('[LOGIN] intentando', email);
+
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password: p });
+
+      if (error) {
+        console.error('[LOGIN] error:', error);
+        const msg = (error.message || '').toLowerCase();
+        if (msg.includes('not confirmed')) return showToast('Usuario no confirmado (Auth → Users → Confirm user).');
+        if (msg.includes('provider') || msg.includes('disabled')) return showToast('Provider Email desactivado (Auth → Providers → Email).');
+        if (msg.includes('invalid login credentials')) return showToast('Usuario/clave incorrectos. Recordá: alias = alias@yy.local');
+        return showToast(error.message || 'Error al iniciar sesión');
+      }
+
+      console.log('[LOGIN] OK', data);
+      showToast('Bienvenido');
+      loginPass.value = '';
+      await refreshSession();
+    };
+
+    btnSignOut.onclick = async () => { await supabase.auth.signOut(); await refreshSession(); };
+
+    supabase.auth.onAuthStateChange((event, session) => {
+      console.log('[AUTH EVENT]', event, session?.user?.email);
+      refreshSession();
+    });
+
+    async function refreshSession(){
+      const { data:{ session } } = await supabase.auth.getSession();
+      const user = session?.user ?? null;
+      console.log('[REFRESH] user', !!user, user?.email);
+
+      if (user){
+        const email = user.email || '';
+        const base  = email.split('@')[0] || 'usuario';
+        const nick  = (user.user_metadata?.username || base).toString();
+        const avatar = user.user_metadata?.avatar_url || null;
+
+        // perfil (no imprescindible, pero útil)
+        const { error: upErr } = await supabase.from('profiles')
+          .upsert({ id:user.id, username:nick.toLowerCase(), avatar_url:avatar }, { onConflict:'id' });
+        if (upErr) console.warn('profiles upsert error', upErr);
+
+        whoami.textContent = `Conectado: ${nick}`;
+        whoami.classList.remove('hidden');
+        if (avatar){ avatarImg.src = avatar; avatarImg.classList.remove('hidden'); }
+        btnSignOut.classList.remove('hidden');
+
+        authCard.classList.add('hidden');
+        app.classList.remove('hidden');
+
+        await Promise.allSettled([loadLogs(), bootWeekly(), initParticipantsUI()]);
+      } else {
+        authCard.classList.remove('hidden');
+        app.classList.add('hidden');
+        whoami.classList.add('hidden');
+        avatarImg.classList.add('hidden');
+        btnSignOut.classList.add('hidden');
+      }
+    }
+    refreshSession();
 
     /***** PARTICIPANTES (chips + autocomplete + persistir) *****/
     const selectedParts=new Set(); let directory=[];
