@@ -327,68 +327,97 @@
     }
     tabLogs.onclick = ()=>activateTab('logs');
     tabSummaries.onclick = ()=>activateTab('summaries');
+    
+    // ===== Helpers de normalización (globales) =====
+    const canon  = s => (s||'').trim().replace(/\s+/g,' ').toLowerCase();   // forma canónica (minúsculas)
+    const pretty = s => canon(s).replace(/\b[a-z]/g, ch => ch.toUpperCase()); // visual en Title Case
+    const esc    = s => (s||'').replaceAll('<','&lt;').replaceAll('>','&gt;'); // escapar HTML
+    
+        
 
     /***** Participantes (chips + autocomplete + persistir) *****/
-    const selectedParts=new Set(); let directory=[];
-    const norm=s=>s.trim().replace(/\s+/g,' '); const esc=s=>(s||'').replaceAll('<','&lt;').replaceAll('>','&gt;');
-
+    // Estructuras
+    const selectedParts = new Set(); // guarda SIEMPRE canónicas (minúsculas)
+    let directory = [];              // lista de canónicas conocidas
+    
     function addChip(name){
-      const n=norm(name); if(!n||selectedParts.has(n)) return;
-      selectedParts.add(n);
-      const chip=document.createElement('span');
-      chip.className='chip'; chip.dataset.name=n;
-      chip.innerHTML=`${esc(n)} <button title="Quitar">×</button>`;
-      chip.querySelector('button').onclick=()=>{selectedParts.delete(n);chip.remove();};
+      const c = canon(name);
+      if (!c || selectedParts.has(c)) return;
+      selectedParts.add(c);
+      const chip = document.createElement('span');
+      chip.className = 'chip';
+      chip.dataset.canon = c;
+      chip.innerHTML = `${esc(pretty(c))} <button title="Quitar">×</button>`;
+      chip.querySelector('button').onclick = () => {
+        selectedParts.delete(c);
+        chip.remove();
+      };
       chipsBox.appendChild(chip);
     }
+    
+    // Sugerencias usando el directorio canónico
     function renderSuggestions(q=''){
-      const needle=q.toLowerCase(); const base=directory.filter(n=>!selectedParts.has(n));
-      const items=needle?base.filter(n=>n.toLowerCase().includes(needle)):base; const top=items.slice(0,8);
-      let html=top.map(n=>`<div class="suggestItem">${esc(n)}</div>`).join('');
-      const exists=directory.some(n=>n.toLowerCase()===needle);
-      if(q && !exists) html+=`<div class="suggestItem create">Crear “${esc(q)}”</div>`;
-      suggestBox.innerHTML=html || `<div class="suggestItem muted">Sin resultados</div>`;
-      suggestBox.classList.toggle('hidden', false);
+      const needle = canon(q);
+      const base = directory.filter(c => !selectedParts.has(c));
+      const items = needle ? base.filter(c => c.includes(needle)) : base;
+      let html = items.slice(0,8)
+        .map(c => `<div class="suggestItem" data-c="${c}">${esc(pretty(c))}</div>`)
+        .join('');
+      const exists = directory.includes(needle);
+      if (q && !exists) html += `<div class="suggestItem create" data-c="${needle}">Crear “${esc(pretty(needle))}”</div>`;
+      suggestBox.innerHTML = html || `<div class="suggestItem muted">Sin resultados</div>`;
+      suggestBox.classList.remove('hidden');
+    
       [...suggestBox.querySelectorAll('.suggestItem')].forEach(it=>{
-        it.onclick=async()=>{
-          const text=it.classList.contains('create')?q:it.textContent;
-          if(it.classList.contains('create')) await createParticipant(text);
-          addChip(text); participantsInput.value=''; suggestBox.classList.add('hidden'); participantsInput.focus();
+        it.onclick = async () => {
+          const c = it.dataset.c;
+          if (it.classList.contains('create')) await createParticipant(c); // guarda canónica
+          addChip(c);                 // añade canónica (UI muestra pretty)
+          participantsInput.value=''; suggestBox.classList.add('hidden'); participantsInput.focus();
         };
       });
     }
-    async function createParticipant(name){
+    
+    async function createParticipant(canonName){
       const { data:{ session } } = await supabase.auth.getSession();
-      const user=session?.user ?? null; if(!user){showToast('No autenticado');return;}
-      const n=norm(name); const { error } = await supabase.from('participants').insert({ name:n, created_by:user.id });
-      if (error && !/duplicate/i.test(error.message)) { showToast(error.message); return; }
-      if (!directory.includes(n)) directory.push(n);
+      const user = session?.user ?? null; if (!user){ showToast('No autenticado'); return; }
+      const n = canon(canonName);
+      const { error } = await supabase.from('participants').upsert(
+        { name:n, created_by:user.id }, { onConflict:'name' }
+      );
+      if (!error && !directory.includes(n)) directory.push(n);
     }
+    
     async function loadDirectory(){
       const [{ data: p1 }, { data: p2 }] = await Promise.all([
         supabase.from('profiles').select('username'),
         supabase.from('participants').select('name')
       ]);
-      const set=new Set(); (p1||[]).forEach(r=>r.username&&set.add(r.username)); (p2||[]).forEach(r=>r.name&&set.add(r.name));
-      directory=Array.from(set).sort((a,b)=>a.localeCompare(b));
+      const set = new Set();
+      (p1||[]).forEach(r => r.username && set.add(canon(r.username)));
+      (p2||[]).forEach(r => r.name     && set.add(canon(r.name)));
+      directory = Array.from(set).sort();
     }
-    async function ensureParticipantsSaved(parts){
-      const have=new Set(directory.map(n=>n.toLowerCase()));
-      const missing=parts.filter(n=>!have.has(n.toLowerCase()));
-      if(!missing.length) return;
-      const { data:{ session } } = await supabase.auth.getSession();
-      const user=session?.user ?? null; if(!user) return;
-      const rows=missing.map(n=>({ name:n, created_by:user.id }));
-      const { error } = await supabase.from('participants').upsert(rows, { onConflict:'name' });
-      if(!error){ missing.forEach(n=>{ if(!directory.includes(n)) directory.push(n); }); }
-    }
+    
     participantsInput.addEventListener('input', e=>renderSuggestions(e.target.value));
     participantsInput.addEventListener('focus', ()=>renderSuggestions(participantsInput.value));
-    document.addEventListener('click', e=>{ if(!suggestBox.contains(e.target) && e.target!==participantsInput) suggestBox.classList.add('hidden'); });
-    participantsInput.addEventListener('keydown', e=>{
-      if(e.key==='Enter'||e.key===','){ e.preventDefault(); const val=norm(participantsInput.value); if(val) addChip(val); participantsInput.value=''; suggestBox.classList.add('hidden'); }
+    document.addEventListener('click', e=>{
+      if(!suggestBox.contains(e.target) && e.target!==participantsInput) suggestBox.classList.add('hidden');
     });
-    async function initParticipantsUI(){ selectedParts.clear(); chipsBox.innerHTML=''; await loadDirectory(); renderSuggestions(''); }
+    participantsInput.addEventListener('keydown', e=>{
+      if(e.key==='Enter'||e.key===','){
+        e.preventDefault();
+        const val = canon(participantsInput.value);
+        if (val) addChip(val);
+        participantsInput.value=''; suggestBox.classList.add('hidden');
+      }
+    });
+    
+    async function initParticipantsUI(){
+      selectedParts.clear(); chipsBox.innerHTML='';
+      await loadDirectory(); renderSuggestions('');
+    }
+
 
     /***** Form Log *****/
     function updateAmountVisibility(){
@@ -459,11 +488,11 @@
       renderTable(logs||[], pmap);
     }
     function renderTable(rows, pmap){
-      const esc = s => (s||'').replaceAll('<','&lt;').replaceAll('>','&gt;');
+      
       logsTable.innerHTML=(rows).map(r=>{
         const date=new Date(r.created_at).toLocaleString();
         const prof=pmap?.[r.user_id]||{}; const who=prof.username||'—';
-        const ava=prof.avatar_url?`<img class="avatar" src="${prof.avatar_url}" alt="">`:''; const parts=(r.participants||[]).join(', ');
+        const ava=prof.avatar_url?`<img class="avatar" src="${prof.avatar_url}" alt="">`:''; const parts = (r.participants||[]).map(pretty).join(', ');
         const amt=(r.amount??'')===''?'—':r.amount; const cat=(CAT_LABEL[r.category]||r.category).replace('_',' ');
         return `<tr><td>${date}</td><td>${ava}${esc(who)}</td><td><span class="tag">${esc(cat)}</span></td><td>${esc(parts)}</td><td>${amt}</td><td>${esc(r.notes||'')}</td></tr>`;
       }).join('');
@@ -580,13 +609,14 @@
       const blank=()=>Object.fromEntries(cats.map(c=>[c,{count:0,amount:0}]));
       const stats={}; // name -> {cats, score}
 
-      for(const r of (data||[])){
-        const parts=r.participants||[];
-        for(const raw of parts){
-          const name=(raw||'').trim(); if(!name) continue;
-          if(!stats[name]) stats[name]={cats:blank(),score:0};
-          const c=r.category;
-          stats[name].cats[c].count += 1;
+      for (const r of (data||[])){
+        const parts = r.participants || [];
+        for (const raw of parts){
+          const name = canon(raw);              // <--- agrupa por canónica
+          if (!name) continue;
+          if (!stats[name]) stats[name] = { cats: blank(), score: 0 };
+          const c = r.category;
+          stats[name].cats[c].count  += 1;
           stats[name].cats[c].amount += Number(r.amount||0);
         }
       }
@@ -603,12 +633,21 @@
         };
       }).sort((a,b)=>b.score-a.score);
 
-      weeklyUserTableBody.innerHTML=rows.map(r=>`
+      weeklyUserTableBody.innerHTML = rows.map(r => `
         <tr>
-          <td>${esc(r.name)}</td><td>${r.venta_total}</td><td>${r.materiales_total}</td><td>${r.crafteo_total}</td>
-          <td>${r.almacenes}</td><td>${r.enc_armas}</td><td>${r.enc_quimicos}</td><td>${r.tiradas}</td><td>${r.enc_fleccas}</td>
+          <td>${esc(pretty(r.name))}</td>   <!-- ← aquí va -->
+          <td>${r.venta_total}</td>
+          <td>${r.materiales_total}</td>
+          <td>${r.crafteo_total}</td>
+          <td>${r.almacenes}</td>
+          <td>${r.enc_armas}</td>
+          <td>${r.enc_quimicos}</td>
+          <td>${r.tiradas}</td>
+          <td>${r.enc_fleccas}</td>
           <td><strong>${r.score}</strong></td>
-        </tr>`).join('');
+        </tr>
+      `).join('');
+
 
       btnExportWeeklyUsersCSV.onclick=()=>{
         const header=['participante','venta_total','materiales_total','crafteo_total','almacenes','encargos_armas','encargos_quimicos','tiradas','encargos_fleccas','puntaje'];
