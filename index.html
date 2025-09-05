@@ -53,8 +53,32 @@
     </div>
 
     <!-- App -->
-    <div id="app" class="hidden">
+     class="hidden">
       <!-- Nuevo Log -->
+
+      <!-- ====== RESUMEN SEMANAL ====== -->
+      <div class="card" style="margin-top:16px">
+        <div class="flex">
+          <h2>Resumen semanal</h2>
+          <div class="right flex">
+            <!-- selector de semana -->
+            <input id="weekInput" type="week">
+            <button id="btnPrevWeek" class="btn">◀ Semana anterior</button>
+            <button id="btnNextWeek" class="btn">Semana siguiente ▶</button>
+            <button id="btnThisWeek" class="btn">Esta semana</button>
+            <button id="btnExportWeeklyCSV" class="btn">Exportar CSV</button>
+          </div>
+        </div>
+      
+        <!-- tarjetas de totales por categoría -->
+        <div id="weeklyGrid" class="yy-grid-cards" style="margin-top:12px"></div>
+      
+        <!-- nota de ayuda -->
+        <div class="muted" style="margin-top:8px">
+          * En categorías que requieren cantidad (Venta de Meta, Crafteo Armas, Tiradas Meta) se muestra el <strong>total</strong>.
+          En el resto, se muestra la <strong>cantidad de acciones</strong>.
+        </div>
+      </div>
       <div class="card" style="margin-top:16px">
         <h2>Nuevo log</h2>
         <div class="row">
