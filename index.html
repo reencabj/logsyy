@@ -4,97 +4,64 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Yakuza – Logs</title>
-  <meta name="description" content="Sistema de logs de la Yakuza (One-Page).">
-  <!-- Estilos básicos (sin frameworks) -->
+  <meta name="description" content="Sistema de logs Yakuza. Acceso exclusivo con Discord.">
   <style>
     :root{
-      --bg:#0b0b0f; --panel:#131319; --muted:#9aa0a6; --text:#e6e6e6; --brand:#7c3aed; --brand-2:#22d3ee;
-      --ok:#22c55e; --bad:#ef4444; --bd:#232431;
-      --radius:14px;
+      --bg:#0b0b0f; --panel:#131319; --muted:#9aa0a6; --text:#e6e6e6;
+      --brand:#7c3aed; --brand2:#27f198; --bd:#232431; --radius:14px;
     }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial;
+    *{box-sizing:border-box} html,body{height:100%}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial;
       background:linear-gradient(180deg,#0b0b0f 0%,#0c0c12 60%,#0b0b0f 100%); color:var(--text)}
-    a{color:var(--brand-2);text-decoration:none}
     .container{max-width:1000px;margin:0 auto;padding:24px}
     .card{background:var(--panel);border:1px solid var(--bd);border-radius:var(--radius);padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
-    h1{font-size:clamp(20px,4vw,32px);margin:0 0 12px}
-    h2{font-size:20px;margin:0 0 12px}
-    .muted{color:var(--muted)}
-    .row{display:grid;gap:14px}
+    h1{font-size:clamp(20px,4vw,32px);margin:0 0 8px} h2{font-size:20px;margin:0 0 12px}
+    .muted{color:var(--muted)} .hidden{display:none}
+    .btn{cursor:pointer;display:inline-flex;align-items:center;gap:10px;padding:12px 16px;border-radius:12px;border:1px solid var(--bd);background:#121221;color:var(--text)}
+    .btn.primary{background:linear-gradient(90deg,var(--brand) 0%, var(--brand2) 100%);border:none}
+    input,select,textarea{width:100%;background:#0f0f15;border:1px solid var(--bd);color:var(--text);border-radius:10px;padding:12px 14px}
+    input:focus,select:focus,textarea:focus{border-color:#3b82f6} .row{display:grid;gap:14px}
     @media (min-width:720px){.grid-2{grid-template-columns:1fr 1fr}}
-    label{font-size:14px;color:#cfd2d6}
-    input,select,textarea{
-      width:100%;background:#0f0f15;border:1px solid var(--bd);color:var(--text);
-      border-radius:10px;padding:12px 14px;outline:none
-    }
-    input:focus,select:focus,textarea:focus{border-color:#3b82f6}
-    .btn{cursor:pointer;display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;border:1px solid var(--bd);background:#121221;color:var(--text)}
-    .btn.primary{background:linear-gradient(90deg,var(--brand) 0%, var(--brand-2) 100%);border:none}
-    .btn.ghost{background:transparent}
-    .toolbar{display:flex;gap:8px;flex-wrap:wrap}
-    .pill{display:inline-block;padding:6px 10px;border:1px solid var(--bd);border-radius:999px;background:#101019}
-    .table{width:100%;border-collapse:collapse;font-size:14px}
-    .table th,.table td{padding:10px;border-bottom:1px solid var(--bd)}
-    .table th{text-align:left;color:#cfd2d6;font-weight:600}
+    .pill{display:inline-flex;align-items:center;gap:10px;padding:6px 10px;border:1px solid var(--bd);border-radius:999px;background:#101019}
     .tag{font-size:12px;padding:4px 8px;border-radius:999px;border:1px solid var(--bd);background:#0f0f18}
-    .tag.req{border-color:#3b82f6}
-    .flex{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .right{margin-left:auto}
-    .center{text-align:center}
-    .hidden{display:none}
-    .toast{position:fixed;bottom:18px;right:18px;background:#121226;border:1px solid var(--bd);color:#e6e6e6;padding:12px 14px;border-radius:12px}
+    .flex{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .right{margin-left:auto} .table{width:100%;border-collapse:collapse;font-size:14px}
+    .table th,.table td{padding:10px;border-bottom:1px solid var(--bd)} .avatar{width:28px;height:28px;border-radius:999px;object-fit:cover}
+    .toast{position:fixed;bottom:18px;right:18px;background:#121226;border:1px solid var(--bd);padding:12px 14px;border-radius:12px}
   </style>
 </head>
 <body>
   <div class="container">
-    <!-- =================== HEADER =================== -->
+    <!-- Header -->
     <div class="card" style="margin-bottom:16px;display:flex;gap:12px;align-items:center;justify-content:space-between">
       <div>
         <h1>Yakuza – Logs</h1>
-        <div class="muted">Registro centralizado de acciones: Almacenes, Venta de Meta, Encargos, Crafteo, Tiradas, etc.</div>
+        <div class="muted">Acceso solo con Discord. Registro centralizado de Almacenes, Venta de Meta, Encargos, Crafteo y Tiradas.</div>
       </div>
       <div id="authBox" class="flex">
+        <img id="avatar" class="avatar hidden" alt="">
         <span id="whoami" class="pill hidden"></span>
         <button id="btnSignOut" class="btn hidden">Salir</button>
       </div>
     </div>
 
-    <!-- =================== AUTH =================== -->
+    <!-- Auth card (Discord only) -->
     <div id="authCard" class="card">
-      <h2>Ingresá</h2>
-      <div class="row grid-2">
-        <div>
-          <label>Email</label>
-          <input id="email" type="email" placeholder="tu@mail.com" autocomplete="email">
-        </div>
-        <div>
-          <label>Contraseña</label>
-          <input id="password" type="password" placeholder="••••••••" autocomplete="current-password">
-        </div>
-      </div>
-      <div class="toolbar" style="margin-top:12px">
-        <button id="btnSignIn"  class="btn primary">Entrar</button>
-        <button id="btnSignUp"  class="btn">Crear cuenta</button>
-        <button id="btnReset"   class="btn ghost">Recuperar contraseña</button>
-      </div>
-      <div class="muted" style="margin-top:8px">Usamos email + contraseña. Los admins pueden desactivar registros abiertos luego.</div>
+      <h2>Ingresá con Discord</h2>
+      <p class="muted">Se solicitará tu cuenta de Discord para identificarte.</p>
+      <button id="btnDiscord" class="btn primary">Entrar con Discord</button>
     </div>
 
-    <!-- =================== APP =================== -->
+    <!-- App -->
     <div id="app" class="hidden">
-      <!-- Formulario -->
+      <!-- Nuevo Log -->
       <div class="card" style="margin-top:16px">
         <h2>Nuevo log</h2>
-
-        <div class="pill">Completa participantes, categoría y (si corresponde) cantidad.</div>
-        <div class="row" style="margin-top:12px">
+        <div class="row">
           <div>
             <label>Participantes (separados por coma)</label>
             <input id="participants" placeholder="Mikaro, Yoshi, Itadura">
           </div>
-
           <div>
             <label>Categoría</label>
             <select id="category">
@@ -108,19 +75,16 @@
               <option value="tiradas_meta">Tiradas Metanfetamina</option>
             </select>
           </div>
-
           <div id="amountWrap" class="hidden">
             <label>Cantidad (número)</label>
             <input id="amount" type="number" min="0" step="1" placeholder="Ej: 25">
           </div>
-
           <div>
             <label>Notas (opcional)</label>
-            <textarea id="notes" rows="3" placeholder="Detalles adicionales: punto de venta, lote, etc."></textarea>
+            <textarea id="notes" rows="3" placeholder="Detalles adicionales"></textarea>
           </div>
-
-          <div class="toolbar">
-            <span class="tag req" id="amountHint" class="hidden">Esta categoría requiere cantidad</span>
+          <div class="flex">
+            <span id="amountHint" class="tag hidden">Esta categoría requiere cantidad</span>
             <button id="btnSubmit" class="btn primary right">Guardar log</button>
           </div>
         </div>
@@ -132,7 +96,7 @@
           <h2>Registros recientes</h2>
           <div class="right flex">
             <select id="filterCat">
-              <option value="">Todas las categorías</option>
+              <option value="">Todas</option>
               <option value="almacenes">Almacenes</option>
               <option value="venta_meta">Venta de Meta</option>
               <option value="encargos_armas">Encargos Armas</option>
@@ -167,27 +131,22 @@
 
   <div id="toast" class="toast hidden"></div>
 
-  <!-- =================== JS: Supabase + lógica =================== -->
   <script type="module">
-    const SUPABASE_URL = "https://dxohxpjeymoenqnvmqko.supabase.co";      // <-- reemplazar
-    const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4b2h4cGpleW1vZW5xbnZtcWtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcwNDQ1MjcsImV4cCI6MjA3MjYyMDUyN30.lIDbq0OzEghpqtXCaRIbU33bcMq_l77zFAWTbrB0myE";                      // <-- reemplazar
+    // 1) Configurar Supabase
+    const SUPABASE_URL  = "https://dxohxpjeymoenqnvmqko.supabase.co"; // <-- reemplazar
+    const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4b2h4cGpleW1vZW5xbnZtcWtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcwNDQ1MjcsImV4cCI6MjA3MjYyMDUyN30.lIDbq0OzEghpqtXCaRIbU33bcMq_l77zFAWTbrB0myE";                  // <-- reemplazar
+    const REDIRECT_TO   = location.origin + location.pathname;   // soporta GitHub Pages en subpath
 
-    // Carga SDK (ESM) sin bundlers
     import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON, { auth:{ persistSession:true } });
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON, { auth: { persistSession: true } });
-
-    // UI refs
+    // 2) UI refs
     const authCard   = document.getElementById('authCard');
     const app        = document.getElementById('app');
     const whoami     = document.getElementById('whoami');
+    const avatarImg  = document.getElementById('avatar');
     const btnSignOut = document.getElementById('btnSignOut');
-
-    const email   = document.getElementById('email');
-    const pass    = document.getElementById('password');
-    const btnIn   = document.getElementById('btnSignIn');
-    const btnUp   = document.getElementById('btnSignUp');
-    const btnRes  = document.getElementById('btnReset');
+    const btnDiscord = document.getElementById('btnDiscord');
 
     const participants = document.getElementById('participants');
     const category     = document.getElementById('category');
@@ -206,21 +165,42 @@
     const REQUIRES_AMOUNT = new Set(['venta_meta','crafteo_armas','tiradas_meta']);
 
     function showToast(msg){ toastEl.textContent=msg; toastEl.classList.remove('hidden'); setTimeout(()=>toastEl.classList.add('hidden'),2200); }
-
     function updateAmountVisibility(){
       const need = REQUIRES_AMOUNT.has(category.value);
       amountWrap.classList.toggle('hidden', !need);
       amountHint.classList.toggle('hidden', !need);
     }
-    category.addEventListener('change', updateAmountVisibility);
-    updateAmountVisibility();
+    category.addEventListener('change', updateAmountVisibility); updateAmountVisibility();
 
-    // ======== AUTH ========
+    // 3) Discord OAuth
+    btnDiscord.onclick = async () => {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'discord',
+        options: { redirectTo: REDIRECT_TO, scopes: 'identify email' }
+      });
+      if (error) showToast(error.message);
+    };
+
+    btnSignOut.onclick = async () => { await supabase.auth.signOut(); refreshSession(); };
+
+    // 4) Asegurar profile (username + avatar) en primer login
+    async function ensureProfile(user){
+      const m = user.user_metadata || {};
+      const nick   = (m.global_name || m.full_name || m.name || m.user_name || 'usuario').toString();
+      const avatar = m.avatar_url || m.picture || null;
+      const { error } = await supabase.from('profiles')
+        .upsert({ id: user.id, username: nick.toLowerCase(), avatar_url: avatar }, { onConflict: 'id' });
+      if (error) console.warn('profiles upsert error', error);
+      return { nick, avatar };
+    }
+
     async function refreshSession(){
       const { data:{ user } } = await supabase.auth.getUser();
       if (user){
-        whoami.textContent = `Conectado: ${user.email}`;
+        const { nick, avatar } = await ensureProfile(user);
+        whoami.textContent = `Conectado: ${nick}`;
         whoami.classList.remove('hidden');
+        if (avatar){ avatarImg.src = avatar; avatarImg.classList.remove('hidden'); }
         btnSignOut.classList.remove('hidden');
         authCard.classList.add('hidden');
         app.classList.remove('hidden');
@@ -228,43 +208,24 @@
       }else{
         authCard.classList.remove('hidden');
         app.classList.add('hidden');
+        whoami.classList.add('hidden');
+        avatarImg.classList.add('hidden');
+        btnSignOut.classList.add('hidden');
       }
     }
 
-    btnIn.onclick = async () => {
-      const { error } = await supabase.auth.signInWithPassword({ email: email.value.trim(), password: pass.value });
-      if (error) return showToast(error.message);
-      showToast('Bienvenido');
-      refreshSession();
-    };
-
-    btnUp.onclick = async () => {
-      const { error } = await supabase.auth.signUp({ email: email.value.trim(), password: pass.value });
-      if (error) return showToast(error.message);
-      showToast('Cuenta creada. Revisa tu email si pide confirmación.');
-    };
-
-    btnRes.onclick = async () => {
-      const { error } = await supabase.auth.resetPasswordForEmail(email.value.trim(), {
-        redirectTo: location.href
-      });
-      if (error) return showToast(error.message);
-      showToast('Email de recuperación enviado (si existe).');
-    };
-
-    btnSignOut.onclick = async () => { await supabase.auth.signOut(); refreshSession(); };
-
-    // ======== INSERT LOG ========
+    // 5) Insertar log
     btnSubmit.onclick = async () => {
       const parts = participants.value.split(',').map(s=>s.trim()).filter(Boolean);
       if (parts.length===0) return showToast('Agrega al menos un participante');
+
+      const { data:{ user } } = await supabase.auth.getUser();
+      if (!user) return showToast('No autenticado');
+
       const cat = category.value;
       const need = REQUIRES_AMOUNT.has(cat);
       const amt = amount.value ? Number(amount.value) : null;
       if (need && !(amt>=0)) return showToast('La cantidad es obligatoria');
-
-      const { data:{ user } } = await supabase.auth.getUser();
-      if (!user) return showToast('No autenticado');
 
       const payload = {
         user_id: user.id,
@@ -277,29 +238,29 @@
       const { error } = await supabase.from('logs').insert(payload);
       if (error) return showToast(error.message);
 
-      participants.value = ''; amount.value=''; notes.value='';
+      participants.value=''; amount.value=''; notes.value='';
       showToast('Log guardado');
       await loadLogs();
     };
 
-    // ======== LOAD + RENDER ========
+    // 6) Cargar y renderizar
     async function loadLogs(){
       let query = supabase.from('logs').select(`
         id, created_at, user_id, participants, category, amount, notes,
-        auth_users: user_id ( email )
-      `).order('created_at', { ascending:false }).limit(200);
+        profiles!inner(username)
+      `).order('created_at',{ascending:false}).limit(200);
 
       if (filterCat.value) query = query.eq('category', filterCat.value);
 
       const { data, error } = await query;
       if (error) return showToast(error.message);
-      renderTable(data || []);
+      renderTable(data||[]);
     }
 
     function renderTable(rows){
       logsTable.innerHTML = rows.map(r=>{
         const date = new Date(r.created_at).toLocaleString();
-        const who  = r.auth_users?.email || '—';
+        const who  = r.profiles?.username || '—';
         const parts= (r.participants||[]).join(', ');
         const amt  = (r.amount ?? '') === '' ? '—' : r.amount;
         const cat  = r.category.replace('_',' ');
@@ -318,7 +279,7 @@
     btnReload.onclick = loadLogs;
     filterCat.onchange = loadLogs;
 
-    // ======== EXPORT CSV ========
+    // 7) Export CSV
     btnCSV.onclick = async () => {
       let query = supabase.from('logs').select('*').order('created_at',{ascending:false}).limit(2000);
       if (filterCat.value) query = query.eq('category', filterCat.value);
@@ -342,8 +303,7 @@
       URL.revokeObjectURL(url);
     };
 
-    // ======== Boot ========
-    supabase.auth.onAuthStateChange((_event, _session)=>refreshSession());
+    supabase.auth.onAuthStateChange(()=>refreshSession());
     refreshSession();
   </script>
 </body>
