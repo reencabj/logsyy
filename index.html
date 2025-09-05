@@ -39,7 +39,7 @@
       background-blend-mode: overlay;
     }
     a{color:var(--yy-lilac);text-decoration:none}
-    .container{max-width:1000px;margin:0 auto;padding:24px}
+    .container{max-width:1100px;margin:0 auto;padding:24px}
     .card{
       background:var(--panel);
       border:1px solid var(--bd);
@@ -76,7 +76,7 @@
     .right{margin-left:auto}
 
     .table{width:100%;border-collapse:collapse;font-size:14px}
-    .table th,.table td{padding:10px;border-bottom:1px solid var(--bd)}
+    .table th,.table td{padding:10px;border-bottom:1px solid var(--bd);white-space:nowrap}
     .avatar{width:24px;height:24px;border-radius:999px;object-fit:cover;vertical-align:middle;margin-right:6px}
 
     .toast{position:fixed;bottom:18px;right:18px;background:#121226;border:1px solid var(--bd);padding:12px 14px;border-radius:12px}
@@ -134,7 +134,7 @@
 
     <!-- App -->
     <div id="app" class="hidden">
-      <!-- Resumen semanal -->
+      <!-- Resumen semanal (general) -->
       <div class="card" style="margin-top:16px">
         <div class="flex">
           <h2>Resumen semanal</h2>
@@ -149,6 +149,39 @@
         <div id="weeklyGrid" class="yy-grid-cards" style="margin-top:12px"></div>
         <div class="muted" style="margin-top:8px">
           * En categorías con cantidad (Venta de Meta, Crafteo Armas, Tiradas Meta) se muestra el <strong>total</strong>. En el resto, la <strong>cantidad de acciones</strong>.
+        </div>
+      </div>
+
+      <!-- Resumen semanal por participante + puntaje -->
+      <div class="card" style="margin-top:16px">
+        <div class="flex">
+          <h2>Resumen por participante</h2>
+          <div class="right flex">
+            <button id="btnExportWeeklyUsersCSV" class="btn">Exportar CSV</button>
+          </div>
+        </div>
+        <div class="muted">
+          PUNTAJE = (Venta de Meta total / 20000) + (Materiales total / 1000) + (Crafteo total / 10) + (Almacenes + Enc. Armas + Enc. Químicos + Tiradas Meta + Enc. Fleccas).  
+          <br>(Para que <em>Materiales / Bonos</em> sume al puntaje, podés cargar un monto opcional en el log).
+        </div>
+        <div style="overflow:auto;margin-top:8px">
+          <table class="table" id="weeklyUserTable">
+            <thead>
+              <tr>
+                <th>Participante</th>
+                <th>Venta Meta (total)</th>
+                <th>Materiales (total)</th>
+                <th>Crafteo (total)</th>
+                <th>Almacenes</th>
+                <th>Enc. Armas</th>
+                <th>Enc. Químicos</th>
+                <th>Tiradas</th>
+                <th>Enc. Fleccas</th>
+                <th>Puntaje</th>
+              </tr>
+            </thead>
+            <tbody><!-- rows --></tbody>
+          </table>
         </div>
       </div>
 
@@ -234,7 +267,6 @@
 
   <script type="module">
     /***** CONFIG *****/
-    // TUS CREDENCIALES SUPABASE
     const SUPABASE_URL  = 'https://dxohxpjeymoenqnvmqko.supabase.co';
     const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4b2h4cGpleW1vZW5xbnZtcWtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcwNDQ1MjcsImV4cCI6MjA3MjYyMDUyN30.lIDbq0OzEghpqtXCaRIbU33bcMq_l77zFAWTbrB0myE';
 
@@ -242,8 +274,7 @@
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON, {
       auth: { persistSession:true, autoRefreshToken:true, detectSessionInUrl:false, storageKey:'yy-logs-auth' }
     });
-    // Para debug desde consola
-    window.sb = supabase;
+    window.sb = supabase; // para debug
 
     /***** REFS UI *****/
     const authCard   = document.getElementById('authCard');
@@ -257,34 +288,29 @@
     const btnLogin   = document.getElementById('btnLogin');
 
     const participantsInput=document.getElementById('participantsInput');
-    const chipsBox=document.getElementById('chipsBox');
-    const suggestBox=document.getElementById('suggestBox');
+    const chipsBox=document.getElementById('chipsBox'); const suggestBox=document.getElementById('suggestBox');
 
-    const category=document.getElementById('category');
-    const amountWrap=document.getElementById('amountWrap');
-    const amount=document.getElementById('amount');
-    const amountLabel=document.getElementById('amountLabel');
+    const category=document.getElementById('category'); const amountWrap=document.getElementById('amountWrap');
+    const amount=document.getElementById('amount'); const amountLabel=document.getElementById('amountLabel');
     const amountHint=document.getElementById('amountHint');
-    const notes=document.getElementById('notes');
-    const btnSubmit=document.getElementById('btnSubmit');
+    const notes=document.getElementById('notes'); const btnSubmit=document.getElementById('btnSubmit');
 
-    const filterCat=document.getElementById('filterCat');
-    const btnReload=document.getElementById('btnReload');
-    const btnCSV=document.getElementById('btnCSV');
-    const logsTable=document.querySelector('#logsTable tbody');
+    const filterCat=document.getElementById('filterCat'); const btnReload=document.getElementById('btnReload');
+    const btnCSV=document.getElementById('btnCSV'); const logsTable=document.querySelector('#logsTable tbody');
 
-    const weekInput=document.getElementById('weekInput');
-    const btnPrevWeek=document.getElementById('btnPrevWeek');
-    const btnNextWeek=document.getElementById('btnNextWeek');
-    const btnThisWeek=document.getElementById('btnThisWeek');
-    const weeklyGrid=document.getElementById('weeklyGrid');
-    const btnExportWeeklyCSV=document.getElementById('btnExportWeeklyCSV');
+    const weekInput=document.getElementById('weekInput'); const btnPrevWeek=document.getElementById('btnPrevWeek');
+    const btnNextWeek=document.getElementById('btnNextWeek'); const btnThisWeek=document.getElementById('btnThisWeek');
+    const weeklyGrid=document.getElementById('weeklyGrid'); const btnExportWeeklyCSV=document.getElementById('btnExportWeeklyCSV');
+
+    const weeklyUserTableBody=document.querySelector('#weeklyUserTable tbody');
+    const btnExportWeeklyUsersCSV=document.getElementById('btnExportWeeklyUsersCSV');
 
     const toastEl=document.getElementById('toast');
     function showToast(msg){ toastEl.textContent=msg; toastEl.classList.remove('hidden'); setTimeout(()=>toastEl.classList.add('hidden'),2200); }
 
     /***** CATEGORÍAS *****/
     const REQUIRES_AMOUNT = new Set(['venta_meta','crafteo_armas','tiradas_meta']);
+    const OPTIONAL_AMOUNT = new Set(['materiales_bonos']); // visible para puntaje (no obligatorio)
     const CAT_LABEL = {
       almacenes:'Almacenes',
       venta_meta:'Venta de Meta',
@@ -303,38 +329,30 @@
       const p = loginPass.value || '';
       if (!u || !p) return showToast('Completá usuario y contraseña');
 
-      // Si trae @ lo uso tal cual; si no, construyo alias@yy.local
       const email = u.includes('@') ? u : `${u}@yy.local`;
-      console.log('[LOGIN] intentando', email);
-
       const { data, error } = await supabase.auth.signInWithPassword({ email, password: p });
 
       if (error) {
-        console.error('[LOGIN] error:', error);
         const msg = (error.message || '').toLowerCase();
         if (msg.includes('not confirmed')) return showToast('Usuario no confirmado (Auth → Users → Confirm user).');
         if (msg.includes('provider') || msg.includes('disabled')) return showToast('Provider Email desactivado (Auth → Providers → Email).');
         if (msg.includes('invalid login credentials')) return showToast('Usuario/clave incorrectos. Recordá: alias = alias@yy.local');
         return showToast(error.message || 'Error al iniciar sesión');
       }
-
-      console.log('[LOGIN] OK', data);
-      showToast('Bienvenido');
-      loginPass.value = '';
+      showToast('Bienvenido'); loginPass.value = '';
       await refreshSession();
     };
 
     btnSignOut.onclick = async () => { await supabase.auth.signOut(); await refreshSession(); };
 
     supabase.auth.onAuthStateChange((event, session) => {
-      console.log('[AUTH EVENT]', event, session?.user?.email);
+      // console.log('[AUTH EVENT]', event, session?.user?.email);
       refreshSession();
     });
 
     async function refreshSession(){
       const { data:{ session } } = await supabase.auth.getSession();
       const user = session?.user ?? null;
-      console.log('[REFRESH] user', !!user, user?.email);
 
       if (user){
         const email = user.email || '';
@@ -342,10 +360,7 @@
         const nick  = (user.user_metadata?.username || base).toString();
         const avatar = user.user_metadata?.avatar_url || null;
 
-        // perfil (no imprescindible, pero útil)
-        const { error: upErr } = await supabase.from('profiles')
-          .upsert({ id:user.id, username:nick.toLowerCase(), avatar_url:avatar }, { onConflict:'id' });
-        if (upErr) console.warn('profiles upsert error', upErr);
+        await supabase.from('profiles').upsert({ id:user.id, username:nick.toLowerCase(), avatar_url:avatar }, { onConflict:'id' });
 
         whoami.textContent = `Conectado: ${nick}`;
         whoami.classList.remove('hidden');
@@ -439,13 +454,27 @@
     function updateAmountVisibility(){
       const cat = category.value;
       const need = REQUIRES_AMOUNT.has(cat);
-      amountWrap.classList.toggle('hidden', !need);
-      if (need){
+      const opt  = OPTIONAL_AMOUNT.has(cat);
+      amountWrap.classList.toggle('hidden', !(need || opt));
+
+      if (need || opt){
         if (cat === 'venta_meta'){
           amountLabel.textContent = 'Monto (USD)';
-          amount.placeholder = 'Ej: 200000 (SOLO LA CANTIDAD SIN PUNTOS NI SIMBOLOS)';
+          amount.placeholder = 'Ej: 25000 (USD)';
           amountHint.textContent = 'Ingresá el monto en dólares (USD)';
-        }else{
+        } else if (cat === 'materiales_bonos'){
+          amountLabel.textContent = 'Monto (Materiales/Bonos)';
+          amount.placeholder = 'Ej: 1500';
+          amountHint.textContent = '(Opcional) Se usa para el puntaje: total / 1000';
+        } else if (cat === 'crafteo_armas'){
+          amountLabel.textContent = 'Cantidad (unidades)';
+          amount.placeholder = 'Ej: 10';
+          amountHint.textContent = 'Se usa también para el puntaje: total / 10';
+        } else if (cat === 'tiradas_meta'){
+          amountLabel.textContent = 'Cantidad (tiradas)';
+          amount.placeholder = 'Ej: 3';
+          amountHint.textContent = 'En puntaje vale 1 por acción (no por cantidad)';
+        } else {
           amountLabel.textContent = 'Cantidad (número)';
           amount.placeholder = 'Ej: 25';
           amountHint.textContent = 'Ingresá la cantidad';
@@ -470,7 +499,7 @@
 
       await ensureParticipantsSaved(parts);
 
-      const payload={ user_id:user.id, participants:parts, category:cat, amount:need?amt:null, notes:notes.value||null };
+      const payload={ user_id:user.id, participants:parts, category:cat, amount: (need || OPTIONAL_AMOUNT.has(cat)) ? (amt ?? null) : (need ? amt : null), notes:notes.value||null };
       const { error } = await supabase.from('logs').insert(payload);
       if (error) return showToast(error.message);
 
@@ -486,7 +515,7 @@
         .select('id,created_at,user_id,participants,category,amount,notes')
         .order('created_at',{ascending:false})
         .limit(200);
-      if (error){ console.error('loadLogs error:', error); showToast(error.message||'Error al cargar logs'); return; }
+      if (error){ showToast(error.message||'Error al cargar logs'); return; }
       if (filterCat.value) logs = (logs||[]).filter(r=>r.category===filterCat.value);
 
       const ids = Array.from(new Set((logs||[]).map(r=>r.user_id))).filter(Boolean);
@@ -534,7 +563,7 @@
       const a=Object.assign(document.createElement('a'),{href:url,download:'logs.csv'}); document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
     };
 
-    /***** RESUMEN SEMANAL *****/
+    /***** RESUMEN SEMANAL (general + por participante) *****/
     function getWeekStart(date=new Date()){ const d=new Date(date); const day=d.getDay(); const diff=(day===0?-6:1-day); d.setHours(0,0,0,0); d.setDate(d.getDate()+diff); return d; }
     function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
     function toISODate(d){ return d.toISOString(); }
@@ -549,13 +578,14 @@
       const [y,w]=weekInput.value.split('-W').map(Number); const jan4=new Date(Date.UTC(y,0,4)); const weekStart=getWeekStart(jan4);
       const start=new Date(weekStart); start.setUTCDate(weekStart.getUTCDate()+(w-1)*7); return { start:new Date(start), end:addDays(start,7) };
     }
+
     async function loadWeeklySummary(){
       const { start, end } = getWeekRangeFromInput();
       const { data, error } = await supabase.from('logs')
         .select('category,amount,created_at')
         .gte('created_at', toISODate(start))
         .lt('created_at',  toISODate(end));
-      if (error){ console.error('weekly error:', error); showToast(error.message||'Error en resumen'); return; }
+      if (error){ showToast(error.message||'Error en resumen'); return; }
       const summary={}; for(const cat of Object.keys(CAT_LABEL)) summary[cat]={count:0,amountSum:0};
       for(const r of (data||[])){ const c=r.category; if(REQUIRES_AMOUNT.has(c)) summary[c].amountSum += Number(r.amount||0); else summary[c].count += 1; }
       weeklyGrid.innerHTML = Object.entries(summary).map(([cat, vals])=>{
@@ -565,10 +595,99 @@
         return `<div class="kpi"><div class="kpi-label">${label}</div><div class="kpi-value">${value}</div><div class="kpi-sub">${sub}</div></div>`;
       }).join('');
     }
-    btnThisWeek.onclick=()=>{ setWeekInputFromDate(new Date()); loadWeeklySummary(); };
-    btnPrevWeek.onclick=()=>{ const r=getWeekRangeFromInput(); setWeekInputFromDate(addDays(r.start,-7)); loadWeeklySummary(); };
-    btnNextWeek.onclick=()=>{ const r=getWeekRangeFromInput(); setWeekInputFromDate(addDays(r.start,7));  loadWeeklySummary(); };
-    weekInput.onchange=loadWeeklySummary;
+
+    async function loadWeeklyByParticipant(){
+      const { start, end } = getWeekRangeFromInput();
+      const { data, error } = await supabase.from('logs')
+        .select('category,amount,participants,created_at')
+        .gte('created_at', toISODate(start))
+        .lt('created_at',  toISODate(end));
+      if (error){ showToast(error.message||'Error en resumen por participante'); return; }
+
+      // estructura: por participante guardo count y amount por categoría
+      const cats = Object.keys(CAT_LABEL);
+      const blank = () => Object.fromEntries(cats.map(c=>[c,{count:0,amount:0}]));
+      const stats = {};  // nombre -> { cats:{cat:{count,amount}}, score:number }
+
+      for(const r of (data||[])){
+        const parts = r.participants || [];
+        for(const raw of parts){
+          const name = (raw||'').trim();
+          if(!name) continue;
+          if(!stats[name]) stats[name] = { cats: blank(), score:0 };
+          const c = r.category;
+          stats[name].cats[c].count += 1;
+          stats[name].cats[c].amount += Number(r.amount || 0);
+        }
+      }
+
+      // puntaje
+      const rows = Object.entries(stats).map(([name, obj])=>{
+        const C = obj.cats;
+        const score =
+          (C.venta_meta.amount       / 20000) +
+          (C.materiales_bonos.amount / 1000)  +
+          (C.crafteo_armas.amount    / 10)    +
+          (C.almacenes.count) +
+          (C.encargos_armas.count) +
+          (C.encargos_quimicos.count) +
+          (C.tiradas_meta.count) +
+          (C.encargos_fleccas.count);
+
+        return {
+          name,
+          venta_total:       C.venta_meta.amount,
+          materiales_total:  C.materiales_bonos.amount, // solo para puntaje
+          crafteo_total:     C.crafteo_armas.amount,
+          almacenes:         C.almacenes.count,
+          enc_armas:         C.encargos_armas.count,
+          enc_quimicos:      C.encargos_quimicos.count,
+          tiradas:           C.tiradas_meta.count,
+          enc_fleccas:       C.encargos_fleccas.count,
+          score:             Number(score.toFixed(2))
+        };
+      }).sort((a,b)=>b.score - a.score);
+
+      // render
+      weeklyUserTableBody.innerHTML = rows.map(r=>`
+        <tr>
+          <td>${esc(r.name)}</td>
+          <td>${r.venta_total}</td>
+          <td>${r.materiales_total}</td>
+          <td>${r.crafteo_total}</td>
+          <td>${r.almacenes}</td>
+          <td>${r.enc_armas}</td>
+          <td>${r.enc_quimicos}</td>
+          <td>${r.tiradas}</td>
+          <td>${r.enc_fleccas}</td>
+          <td><strong>${r.score}</strong></td>
+        </tr>
+      `).join('');
+
+      // export handler (reconstruyo CSV con las filas mostradas)
+      btnExportWeeklyUsersCSV.onclick = () => {
+        const header = ['participante','venta_total','materiales_total','crafteo_total','almacenes','encargos_armas','encargos_quimicos','tiradas','encargos_fleccas','puntaje'];
+        const csv = [header.join(',')]
+          .concat(rows.map(r=>[
+            `"${r.name.replaceAll('"','""')}"`,
+            r.venta_total, r.materiales_total, r.crafteo_total,
+            r.almacenes, r.enc_armas, r.enc_quimicos, r.tiradas, r.enc_fleccas,
+            r.score
+          ].join(',')))
+          .join('\n');
+        const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+        const url  = URL.createObjectURL(blob);
+        const a = Object.assign(document.createElement('a'), { href:url, download:`resumen_participantes_${new Date().toISOString().slice(0,10)}.csv` });
+        document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+      };
+    }
+
+    // Navegación semanas
+    btnThisWeek.onclick=()=>{ setWeekInputFromDate(new Date()); loadWeeklySummary(); loadWeeklyByParticipant(); };
+    btnPrevWeek.onclick=()=>{ const r=getWeekRangeFromInput(); setWeekInputFromDate(addDays(r.start,-7)); loadWeeklySummary(); loadWeeklyByParticipant(); };
+    btnNextWeek.onclick=()=>{ const r=getWeekRangeFromInput(); setWeekInputFromDate(addDays(r.start,7));  loadWeeklySummary(); loadWeeklyByParticipant(); };
+    weekInput.onchange=()=>{ loadWeeklySummary(); loadWeeklyByParticipant(); };
+
     btnExportWeeklyCSV.onclick=async()=>{
       const { start, end }=getWeekRangeFromInput();
       const { data, error }=await supabase.from('logs')
@@ -583,7 +702,8 @@
       const a=Object.assign(document.createElement('a'),{href:url,download:`logs_semana_${new Date().toISOString().slice(0,10)}.csv`});
       document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
     };
-    function bootWeekly(){ setWeekInputFromDate(new Date()); loadWeeklySummary(); }
+
+    function bootWeekly(){ setWeekInputFromDate(new Date()); loadWeeklySummary(); loadWeeklyByParticipant(); }
   </script>
 </body>
 </html>
