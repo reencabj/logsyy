@@ -646,37 +646,17 @@
         }
       }
 
-      const rows = Object.entries(stats).map(([name, obj]) => {
-        const C = obj.cats;
-      
-        // puntaje como número crudo
-        const rawScore =
-          (C.venta_meta.amount / 20000) +
-          (C.materiales_bonos.amount / 1000) +
-          (C.crafteo_armas.amount / 7) +
-          C.almacenes.count +
-          C.encargos_armas.count +
-          C.encargos_quimicos.count +
-          C.tiradas_meta.count +
-          C.enc_fleccas.count;
-      
-        // redondeo al entero más cercano
-        const score = Math.round(rawScore);
-      
+      const rows=Object.entries(stats).map(([name,obj])=>{
+        const C=obj.cats;
+        const score=(C.venta_meta.amount/20000)+(C.materiales_bonos.amount/1000)+(C.crafteo_armas.amount/7)
+                    +C.almacenes.count+C.encargos_armas.count+C.encargos_quimicos.count+C.tiradas_meta.count+C.encargos_fleccas.count;
         return {
           name,
-          venta_total: C.venta_meta.amount,
-          materiales_total: C.materiales_bonos.amount,
-          crafteo_total: C.crafteo_armas.amount,
-          almacenes: C.almacenes.count,
-          enc_armas: C.encargos_armas.count,
-          enc_quimicos: C.encargos_quimicos.count,
-          tiradas: C.tiradas_meta.count,
-          enc_fleccas: C.enc_fleccas.count,
-          score, // entero
+          venta_total:C.venta_meta.amount, materiales_total:C.materiales_bonos.amount, crafteo_total:C.crafteo_armas.amount,
+          almacenes:C.almacenes.count, enc_armas:C.encargos_armas.count, enc_quimicos:C.encargos_quimicos.count, tiradas:C.tiradas_meta.count, enc_fleccas:C.encargos_fleccas.count,
+          score:Number(score.toFixed(2))
         };
-      }).sort((a, b) => b.score - a.score);
-
+      }).sort((a,b)=>b.score-a.score);
 
       weeklyUserTableBody.innerHTML = rows.map(r => `
         <tr>
