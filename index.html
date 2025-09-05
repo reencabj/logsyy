@@ -87,6 +87,26 @@
       <div class="flex" style="margin-top:12px"><button id="btnLogin" class="btn primary">Entrar</button></div>
     </div>
 
+    <!-- Forzar cambio de contraseña (aparece al primer login) -->
+    <div id="forcePwdCard" class="card hidden" style="margin-top:16px">
+      <h2>Cambiá tu contraseña</h2>
+      <p class="muted">Ingresá una nueva contraseña (mínimo 6 caracteres). Solo te lo pediremos una vez.</p>
+      <div class="row grid-2">
+        <div>
+          <label>Nueva contraseña</label>
+          <input id="newPass1" type="password" placeholder="••••••••">
+        </div>
+        <div>
+          <label>Repetir contraseña</label>
+          <input id="newPass2" type="password" placeholder="••••••••">
+        </div>
+      </div>
+      <div class="flex" style="margin-top:12px">
+        <button id="btnSaveNewPass" class="btn primary">Guardar</button>
+        <button id="btnLogoutPwd" class="btn">Salir</button>
+      </div>
+    </div>
+
     <!-- App -->
     <div id="app" class="hidden">
       <!-- Tabs -->
@@ -243,6 +263,12 @@
     const loginUser  = document.getElementById('loginUser');
     const loginPass  = document.getElementById('loginPass');
     const btnLogin   = document.getElementById('btnLogin');
+    const forcePwdCard = document.getElementById('forcePwdCard');
+    const newPass1 = document.getElementById('newPass1');
+    const newPass2 = document.getElementById('newPass2');
+    const btnSaveNewPass = document.getElementById('btnSaveNewPass');
+    const btnLogoutPwd = document.getElementById('btnLogoutPwd');
+
 
     // Tabs
     const tabLogs = document.getElementById('tabLogs');
@@ -297,23 +323,57 @@
 
     async function refreshSession(){
       const { data:{ session } } = await supabase.auth.getSession();
-      const user=session?.user ?? null;
-      if(user){
-        const email=user.email||''; const base=email.split('@')[0]||'usuario';
-        const nick=(user.user_metadata?.username||base).toString(); const avatar=user.user_metadata?.avatar_url||null;
-        await supabase.from('profiles').upsert({ id:user.id, username:nick.toLowerCase(), avatar_url:avatar }, { onConflict:'id' });
-        whoami.textContent=`Conectado: ${nick}`; whoami.classList.remove('hidden');
-        if (avatar){ avatarImg.src=avatar; avatarImg.classList.remove('hidden'); }
-        btnSignOut.classList.remove('hidden'); authCard.classList.add('hidden'); app.classList.remove('hidden');
-
-        // Al entrar, por defecto tab LOGS
-        activateTab('logs');
-        await Promise.allSettled([loadLogs(), initParticipantsUI(), bootWeekly()]);
-      }else{
-        authCard.classList.remove('hidden'); app.classList.add('hidden');
-        whoami.classList.add('hidden'); avatarImg.classList.add('hidden'); btnSignOut.classList.add('hidden');
+      const user = session?.user ?? null;
+    
+      if (!user){
+        // mostrar login
+        authCard.classList.remove('hidden');
+        forcePwdCard.classList.add('hidden');
+        app.classList.add('hidden');
+        whoami.classList.add('hidden');
+        avatarImg.classList.add('hidden');
+        btnSignOut.classList.add('hidden');
+        return;
+      }
+    
+      // Perfil básico
+      const email = user.email || '';
+      const base  = email.split('@')[0] || 'usuario';
+      const nick  = (user.user_metadata?.username || base).toString();
+      const avatar = user.user_metadata?.avatar_url || null;
+    
+      // upsert sin tocar must_change_password
+      await supabase.from('profiles')
+        .upsert({ id:user.id, username:nick.toLowerCase(), avatar_url:avatar }, { onConflict:'id' });
+    
+      // leer flag
+      const { data: prof } = await supabase
+        .from('profiles')
+        .select('username, avatar_url, must_change_password')
+        .eq('id', user.id)
+        .single();
+    
+      // header
+      whoami.textContent = `Conectado: ${nick}`;
+      whoami.classList.remove('hidden');
+      if (avatar || prof?.avatar_url){ (avatarImg.src = (avatar || prof.avatar_url)); avatarImg.classList.remove('hidden'); }
+      btnSignOut.classList.remove('hidden');
+      authCard.classList.add('hidden');
+    
+      if (prof?.must_change_password){
+        // Forzar cambio: oculto app y muestro card
+        app.classList.add('hidden');
+        forcePwdCard.classList.remove('hidden');
+      } else {
+        // App normal
+        forcePwdCard.classList.add('hidden');
+        app.classList.remove('hidden');
+        // por defecto tab LOGS
+        activateTab?.('logs');
+        await Promise.allSettled([loadLogs?.(), initParticipantsUI?.(), bootWeekly?.()]);
       }
     }
+
     refreshSession();
 
     /***** Tabs *****/
@@ -573,6 +633,34 @@
       };
       
       weekInput.onchange = updateSummaries;
+
+      btnSaveNewPass.onclick = async () => {
+        const p1 = (newPass1.value || '').trim();
+        const p2 = (newPass2.value || '').trim();
+        if (p1.length < 6) return showToast('La contraseña debe tener al menos 6 caracteres');
+        if (p1 !== p2)     return showToast('Las contraseñas no coinciden');
+      
+        // Cambia la password de este usuario logueado
+        const { error: upErr } = await supabase.auth.updateUser({ password: p1 });
+        if (upErr){ showToast(upErr.message || 'No se pudo actualizar'); return; }
+      
+        // Apaga el flag
+        const { data:{ user } } = await supabase.auth.getUser();
+        await supabase.from('profiles')
+          .update({ must_change_password: false })
+          .eq('id', user.id);
+      
+        // Limpio inputs y paso a la app
+        newPass1.value=''; newPass2.value='';
+        showToast('Contraseña actualizada');
+        await refreshSession();
+      };
+      
+      btnLogoutPwd.onclick = async () => {
+        await supabase.auth.signOut();
+        await refreshSession();
+      };
+
       
       // Export general (todos los logs de la semana actual del selector)
       btnExportWeeklyCSV.onclick = async () => {
